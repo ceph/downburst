@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+# site packages needed because libvirt python bindings are not nicely
+# packaged
+test -d virtualenv || virtualenv --system-site-packages --distribute virtualenv
+./virtualenv/bin/python setup.py develop
+./virtualenv/bin/pip install -r requirements-dev.txt

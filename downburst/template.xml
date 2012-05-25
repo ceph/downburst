@@ -1,0 +1,44 @@
+<domain type='kvm'>
+  <!-- <name>TODO</name> -->
+  <memory>524288</memory>
+  <os>
+    <type arch='x86_64' machine='pc-1.0'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+    <pae/>
+  </features>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <devices>
+    <emulator>/usr/bin/kvm</emulator>
+    <!-- <disk type='file' device='disk'> -->
+    <!--   <driver name='qemu' type='qcow2'/> -->
+    <!--   <source file='/var/lib/libvirt/images/NAME.img'/> -->
+    <!--   <target dev='vda' bus='virtio'/> -->
+    <!-- </disk> -->
+    <!-- <disk type='file' device='cdrom'> -->
+    <!--   <driver name='qemu' type='raw'/> -->
+    <!--   <source file='/var/lib/libvirt/images/cloud-init.NAME.iso'/> -->
+    <!--   <target dev='hdc' bus='ide'/> -->
+    <!--   <readonly/> -->
+    <!-- </disk> -->
+    <interface type='network'>
+      <source network='default'/>
+      <model type='virtio'/>
+    </interface>
+    <serial type='pty'>
+      <target port='0'/>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <input type='mouse' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes'/>
+    <sound model='ich6'>
+    </sound>
+  </devices>
+</domain>
