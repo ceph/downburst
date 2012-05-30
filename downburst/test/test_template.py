@@ -1,8 +1,8 @@
 from .. import template
 
 
-def test_fill_name():
-    tree = template.fill(
+def test_domain_name():
+    tree = template.domain(
         name='fakename',
         disk_key='/fake/path',
         iso_key='/fake/iso',
@@ -12,8 +12,8 @@ def test_fill_name():
     assert name == 'fakename'
 
 
-def test_fill_disk():
-    tree = template.fill(
+def test_domain_disk():
+    tree = template.domain(
         name='fakename',
         disk_key='/fake/path',
         iso_key='/fake/iso',
@@ -24,8 +24,8 @@ def test_fill_disk():
     assert got == ['/fake/path']
 
 
-def test_fill_iso():
-    tree = template.fill(
+def test_domain_iso():
+    tree = template.domain(
         name='fakename',
         disk_key='/fake/path',
         iso_key='/fake/iso',

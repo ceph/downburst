@@ -2,7 +2,34 @@ from lxml import etree
 import pkg_resources
 
 
-def fill(
+def volume(
+    name,
+    capacity=0,
+    ):
+    root = etree.Element('volume')
+    etree.SubElement(root, 'name').text = name
+    etree.SubElement(root, 'capacity').text = '{0:d}'.format(capacity)
+    etree.SubElement(root, 'allocation').text = '0'
+    target = etree.SubElement(root, 'target')
+    etree.SubElement(target, 'format', type='qcow2')
+    return root
+
+
+def volume_clone(
+    name,
+    parent_vol,
+    ):
+    (_type_, capacity, _allocation) = parent_vol.info()
+    root = volume(name=name, capacity=capacity)
+
+    backing = etree.SubElement(root, 'backingStore')
+    etree.SubElement(backing, 'format', type='qcow2')
+    etree.SubElement(backing, 'path').text = parent_vol.key()
+
+    return root
+
+
+def domain(
     name,
     disk_key,
     iso_key,
