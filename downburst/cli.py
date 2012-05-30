@@ -1,6 +1,10 @@
 import argparse
 import logging
 import pkg_resources
+import sys
+
+from . import exc
+
 
 log = logging.getLogger(__name__)
 
@@ -45,4 +49,11 @@ def main():
         level=loglevel,
         )
 
-    return args.func(args)
+    try:
+        return args.func(args)
+    except exc.DownburstError as e:
+        print >>sys.stderr, '{prog}: {msg}'.format(
+            prog=args.prog,
+            msg=e,
+            )
+        sys.exit(1)

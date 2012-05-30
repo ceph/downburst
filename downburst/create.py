@@ -20,6 +20,12 @@ def create(args):
     if conn is None:
         raise exc.LibvirtConnectionError()
 
+    # check if the vm exists already, complain if so. this would
+    # normally use conn.lookupByName, but that logs on all errors;
+    # avoid the noise.
+    if args.name in conn.listDefinedDomains():
+        raise exc.VMExistsError(args.name)
+
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
 

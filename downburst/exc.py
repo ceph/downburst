@@ -14,6 +14,12 @@ class LibvirtConnectionError(DownburstError):
     """
 
 
+class VMExistsError(DownburstError):
+    """
+    Virtual machine with this name exists already
+    """
+
+
 class ImageHashMismatchError(DownburstError):
     """
     Image SHA-512 did not match
