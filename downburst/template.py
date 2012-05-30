@@ -5,13 +5,16 @@ import pkg_resources
 def volume(
     name,
     capacity=0,
+    format_=None,
     ):
     root = etree.Element('volume')
     etree.SubElement(root, 'name').text = name
     etree.SubElement(root, 'capacity').text = '{0:d}'.format(capacity)
     etree.SubElement(root, 'allocation').text = '0'
     target = etree.SubElement(root, 'target')
-    etree.SubElement(target, 'format', type='qcow2')
+    if format_ is None:
+        format_ = 'qcow2'
+    etree.SubElement(target, 'format', type=format_)
     return root
 
 

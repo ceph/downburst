@@ -4,6 +4,7 @@ import logging
 from lxml import etree
 
 from . import image
+from . import iso
 from . import exc
 from . import template
 
@@ -36,10 +37,15 @@ def create(args):
         )
     clone = pool.createXML(etree.tostring(clonexml), flags=0)
 
+    iso_vol = iso.create_meta_iso(
+        pool=pool,
+        name=args.name,
+        )
+
     domainxml = template.domain(
         name=args.name,
         disk_key=clone.key(),
-        iso_key='/var/lib/libvirt/images/cloud-init.{name}.iso'.format(name=args.name), # TODO
+        iso_key=iso_vol.key(),
         )
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
