@@ -37,7 +37,10 @@ def generate_meta_iso(
             data=meta_data,
             default_flow_style=False,
             )
+        meta.flush()
+
         user.write('#cloud-config\n')
+        user.flush()
 
         subprocess.check_call(
             args=[
