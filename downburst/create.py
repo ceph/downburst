@@ -13,9 +13,6 @@ log = logging.getLogger(__name__)
 
 
 def create(args):
-    """
-    Create an Ubuntu Cloud Image vm.
-    """
     log.debug('Connecting to libvirt...')
     conn = libvirt.open('qemu:///system')
     if conn is None:
@@ -55,7 +52,7 @@ def create(args):
 
 def make(parser):
     """
-    Create a vm
+    Create an Ubuntu Cloud Image vm
     """
     parser.add_argument(
         '--user-data',
