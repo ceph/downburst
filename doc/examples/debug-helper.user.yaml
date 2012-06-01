@@ -1,0 +1,8 @@
+#cloud-config-archive
+
+# this captures output from the cloud-init runnables in a log file
+- type: text/cloud-config
+  content: |
+    output:
+      all: '| tee -a /var/log/cloud-init-output.log'
+

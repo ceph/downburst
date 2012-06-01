@@ -1,0 +1,13 @@
+# TODO it's already ifup'ed, this changes the file but not the running
+# config! you need to use the corresponding static-ip.user.yaml
+
+# the IP address here is chosen to be inside the virbr0 network
+# libvirt creates by default
+network-interfaces: |
+  auto eth0
+  iface eth0 inet static
+    address 192.168.122.200
+    network 192.168.122.0
+    netmask 255.255.255.0
+    broadcast 192.168.122.255
+    gateway 192.168.122.1

@@ -1,0 +1,8 @@
+#cloud-config-archive
+
+# kludge around meta-data ``network-interfaces`` inability to change
+# ip address from what dhcp gave it
+- |
+  #!/bin/sh
+  ifdown eth0
+  ifup eth0
