@@ -40,6 +40,8 @@ def create(args):
     iso_vol = iso.create_meta_iso(
         pool=pool,
         name=args.name,
+        extra_meta=args.meta_data,
+        extra_user=args.user_data,
         )
 
     domainxml = template.domain(
@@ -55,6 +57,16 @@ def make(parser):
     """
     Create a vm
     """
+    parser.add_argument(
+        '--user-data',
+        metavar='FILE',
+        help='extra user-data, a cloud-config-archive or arbitrary file',
+        )
+    parser.add_argument(
+        '--meta-data',
+        metavar='FILE',
+        help='extra meta-data, must contain a yaml mapping',
+        )
     parser.add_argument(
         'name',
         metavar='NAME',
