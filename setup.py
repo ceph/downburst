@@ -44,6 +44,7 @@ setup(
 
         'downburst.cli': [
             'create = downburst.create:make',
+            'gen-ssh-key = downburst.gen_ssh_key:make',
             ],
 
         },
