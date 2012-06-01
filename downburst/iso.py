@@ -35,6 +35,7 @@ def generate_meta_iso(
         yaml.safe_dump(
             stream=meta,
             data=meta_data,
+            default_flow_style=False,
             )
         user.write('#cloud-config\n')
 
