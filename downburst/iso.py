@@ -35,8 +35,8 @@ def generate_meta_iso(
         ssh_pubkey = get_ssh_pubkey()
         meta_data['public-keys'].append(ssh_pubkey)
 
-        if extra_meta is not None:
-            with file(extra_meta) as f:
+        for path in extra_meta:
+            with file(path) as f:
                 extra_meta_data = yaml.safe_load(f)
                 meta_data.update(extra_meta_data)
 
@@ -51,8 +51,8 @@ def generate_meta_iso(
         user_data = [
             ]
 
-        if extra_user is not None:
-            with file(extra_user) as f:
+        for path in extra_user:
+            with file(path) as f:
                 if f.readline() == '#cloud-config-archive\n':
                     # merge it into ours
                     extra_user_data = yaml.safe_load(f)

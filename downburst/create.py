@@ -62,12 +62,18 @@ def make(parser):
     parser.add_argument(
         '--meta-data',
         metavar='FILE',
+        action='append',
         help='extra meta-data, must contain a yaml mapping',
         )
     parser.add_argument(
         'name',
         metavar='NAME',
+        action='append',
         help='unique name to give to the vm',
         # TODO check valid syntax for hostname
         )
-    parser.set_defaults(func=create)
+    parser.set_defaults(
+        func=create,
+        user_data=[],
+        meta_data=[],
+        )
