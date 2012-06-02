@@ -18,6 +18,11 @@ def parse_args():
         action='store_true', default=None,
         help='be more verbose',
         )
+    parser.add_argument(
+        '-c', '--connect',
+        metavar='URI',
+        help='libvirt URI to connect to',
+        )
     sub = parser.add_subparsers(
         title='commands',
         metavar='COMMAND',
@@ -33,6 +38,7 @@ def parse_args():
     parser.set_defaults(
         # we want to hold on to this, for later
         prog=parser.prog,
+        connect='qemu:///system',
         )
     args = parser.parse_args()
     return args

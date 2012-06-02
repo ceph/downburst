@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 def create(args):
     log.debug('Connecting to libvirt...')
-    conn = libvirt.open('qemu:///system')
+    conn = libvirt.open(args.connect)
     if conn is None:
         raise exc.LibvirtConnectionError()
 
@@ -27,7 +27,7 @@ def create(args):
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
 
-    vol = image.ensure_cloud_image()
+    vol = image.ensure_cloud_image(conn=conn)
     clonexml = template.volume_clone(
         name='{name}.img'.format(name=args.name),
         parent_vol=vol,

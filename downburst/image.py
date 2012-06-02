@@ -1,5 +1,4 @@
 import hashlib
-import libvirt
 import logging
 import requests
 
@@ -80,16 +79,11 @@ def upload_volume(vol, fp, sha512):
     stream.finish()
 
 
-def ensure_cloud_image():
+def ensure_cloud_image(conn):
     """
     Ensure that the Ubuntu 12.04 Cloud image is in the libvirt pool.
     Returns the volume.
     """
-    log.debug('Connecting to libvirt...')
-    conn = libvirt.open('qemu:///system')
-    if conn is None:
-        raise exc.LibvirtConnectionError()
-
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
 
