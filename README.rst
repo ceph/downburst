@@ -18,8 +18,8 @@ For more information on Ubuntu Cloud Images, please refer to:
 Installation
 ============
 
-You can install Downburst like any other Python package, but it comes
-with a convenient bootstrap script that sets it up in a virtual
+You can install Downburst like any other Python package, but it also
+comes with a convenient bootstrap script that sets it up in a virtual
 environment under the source directory. Just run::
 
 	./bootstrap
