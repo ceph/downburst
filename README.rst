@@ -24,7 +24,7 @@ environment under the source directory. Just run::
 
 	./bootstrap
 
-And from there on, use
+And from there on, use::
 
 	./virtualenv/bin/downburst ARGS..
 
