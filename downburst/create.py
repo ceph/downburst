@@ -57,6 +57,7 @@ def make(parser):
     parser.add_argument(
         '--user-data',
         metavar='FILE',
+        action='append',
         help='extra user-data, a cloud-config-archive or arbitrary file',
         )
     parser.add_argument(
@@ -68,7 +69,6 @@ def make(parser):
     parser.add_argument(
         'name',
         metavar='NAME',
-        action='append',
         help='unique name to give to the vm',
         # TODO check valid syntax for hostname
         )
