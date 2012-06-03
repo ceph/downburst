@@ -63,14 +63,6 @@ def generate_meta_iso(
                     extra_user_data = f.read()
                     user_data.append(extra_user_data)
 
-        cloud_config = {}
-        user_data.append(dict(
-                type='text/cloud-config',
-                content=yaml.safe_dump(
-                    cloud_config,
-                    default_flow_style=False,
-                    ),
-                ))
         yaml.safe_dump(
             stream=user,
             data=user_data,
