@@ -21,8 +21,11 @@ def volume(
 def volume_clone(
     name,
     parent_vol,
+    capacity=None,
     ):
-    (_type_, capacity, _allocation) = parent_vol.info()
+    (_type_, parent_capacity, _allocation) = parent_vol.info()
+    if capacity is None:
+        capacity = parent_capacity
     root = volume(name=name, capacity=capacity)
 
     backing = etree.SubElement(root, 'backingStore')

@@ -29,11 +29,6 @@ def create(args):
     pool = conn.storagePoolLookupByName('default')
 
     vol = image.ensure_cloud_image(conn=conn)
-    clonexml = template.volume_clone(
-        name='{name}.img'.format(name=args.name),
-        parent_vol=vol,
-        )
-    clone = pool.createXML(etree.tostring(clonexml), flags=0)
 
     meta_data = meta.gen_meta(
         name=args.name,
@@ -43,6 +38,15 @@ def create(args):
         name=args.name,
         extra_user=args.user_data,
         )
+
+    capacity = meta_data.get('downburst', {}).get('disk-size')
+    clonexml = template.volume_clone(
+        name='{name}.img'.format(name=args.name),
+        parent_vol=vol,
+        capacity=2147483648*5,
+        )
+    clone = pool.createXML(etree.tostring(clonexml), flags=0)
+
     iso_vol = iso.create_meta_iso(
         pool=pool,
         name=args.name,
