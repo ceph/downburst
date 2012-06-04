@@ -36,6 +36,7 @@ def domain(
     name,
     disk_key,
     iso_key,
+    ram=None,
     ):
     with pkg_resources.resource_stream('downburst', 'template.xml') as f:
         tree = etree.parse(f)
@@ -65,5 +66,9 @@ def domain(
     etree.SubElement(disk, 'driver', name='qemu', type='raw')
     etree.SubElement(disk, 'source', file=iso_key)
     etree.SubElement(disk, 'target', dev='hdc', bus='ide')
+
+    if ram is not None:
+        (memory,) = tree.xpath('/domain/memory')
+        memory.text = '{ram:d}'.format(ram=ram)
 
     return tree

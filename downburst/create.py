@@ -6,6 +6,7 @@ from lxml import etree
 from . import image
 from . import iso
 from . import exc
+from . import meta
 from . import template
 
 
@@ -49,10 +50,12 @@ def create(args):
         user_data=user_data,
         )
 
+    ram = meta_data.get('downburst', {}).get('ram')
     domainxml = template.domain(
         name=args.name,
         disk_key=clone.key(),
         iso_key=iso_vol.key(),
+        ram=ram,
         )
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
