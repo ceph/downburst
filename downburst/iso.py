@@ -11,8 +11,8 @@ from . import template
 def generate_meta_iso(
     name,
     fp,
-    extra_meta=None,
-    extra_user=None,
+    meta_data,
+    user_data,
     ):
     def gentemp(prefix):
         return tempfile.NamedTemporaryFile(
@@ -20,10 +20,7 @@ def generate_meta_iso(
             suffix='.tmp',
             )
     with gentemp('meta') as meta_f, gentemp('user') as user_f:
-        meta_data = meta.gen_meta(name=name, extra_meta=extra_meta)
         meta.write_meta(meta_data=meta_data, fp=meta_f)
-
-        user_data = meta.gen_user(name=name, extra_user=extra_user)
         meta.write_user(user_data=user_data, fp=user_f)
 
         subprocess.check_call(
@@ -58,15 +55,15 @@ def upload_volume(vol, length, fp):
 def create_meta_iso(
     pool,
     name,
-    extra_meta=None,
-    extra_user=None,
+    meta_data,
+    user_data,
     ):
     with tempfile.TemporaryFile() as iso:
         generate_meta_iso(
             name=name,
             fp=iso,
-            extra_meta=extra_meta,
-            extra_user=extra_user,
+            meta_data=meta_data,
+            user_data=user_data,
             )
         iso.seek(0)
         length = os.fstat(iso.fileno()).st_size

@@ -34,11 +34,19 @@ def create(args):
         )
     clone = pool.createXML(etree.tostring(clonexml), flags=0)
 
+    meta_data = meta.gen_meta(
+        name=args.name,
+        extra_meta=args.meta_data,
+        )
+    user_data = meta.gen_user(
+        name=args.name,
+        extra_user=args.user_data,
+        )
     iso_vol = iso.create_meta_iso(
         pool=pool,
         name=args.name,
-        extra_meta=args.meta_data,
-        extra_user=args.user_data,
+        meta_data=meta_data,
+        user_data=user_data,
         )
 
     domainxml = template.domain(
