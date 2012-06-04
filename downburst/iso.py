@@ -1,18 +1,11 @@
 import os
-import os.path
 import subprocess
 import tempfile
-import yaml
 
 from lxml import etree
 
+from . import meta
 from . import template
-
-
-def get_ssh_pubkey():
-    path = os.path.expanduser('~/.ssh/id_rsa.pub')
-    with file(path, 'rb') as f:
-        return f.readline().rstrip('\n')
 
 
 def generate_meta_iso(
@@ -26,49 +19,12 @@ def generate_meta_iso(
             prefix='downburst.{prefix}.'.format(prefix=prefix),
             suffix='.tmp',
             )
-    with gentemp('meta') as meta, gentemp('user') as user:
-        meta_data = {
-            'instance-id': name,
-            'local-hostname': name,
-            'public-keys': [],
-            }
-        ssh_pubkey = get_ssh_pubkey()
-        meta_data['public-keys'].append(ssh_pubkey)
+    with gentemp('meta') as meta_f, gentemp('user') as user_f:
+        meta_data = meta.gen_meta(name=name, extra_meta=extra_meta)
+        meta.write_meta(meta_data=meta_data, fp=meta_f)
 
-        for path in extra_meta:
-            with file(path) as f:
-                extra_meta_data = yaml.safe_load(f)
-                meta_data.update(extra_meta_data)
-
-        yaml.safe_dump(
-            stream=meta,
-            data=meta_data,
-            default_flow_style=False,
-            )
-        meta.flush()
-
-        user.write('#cloud-config-archive\n')
-        user_data = [
-            ]
-
-        for path in extra_user:
-            with file(path) as f:
-                if f.readline() == '#cloud-config-archive\n':
-                    # merge it into ours
-                    extra_user_data = yaml.safe_load(f)
-                    user_data.extend(extra_user_data)
-                else:
-                    # some other format; slap it in as a single string
-                    f.seek(0)
-                    extra_user_data = f.read()
-                    user_data.append(extra_user_data)
-
-        yaml.safe_dump(
-            stream=user,
-            data=user_data,
-            default_flow_style=False,
-            )
-        user.flush()
+        user_data = meta.gen_user(name=name, extra_user=extra_user)
+        meta.write_user(user_data=user_data, fp=user_f)
 
         subprocess.check_call(
             args=[
@@ -79,8 +35,8 @@ def generate_meta_iso(
                 '-joliet',
                 '-rock',
                 '-graft-points',
-                'user-data={path}'.format(path=user.name),
-                'meta-data={path}'.format(path=meta.name),
+                'user-data={path}'.format(path=user_f.name),
+                'meta-data={path}'.format(path=meta_f.name),
                 ],
             stdout=fp,
             close_fds=True,
