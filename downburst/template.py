@@ -40,6 +40,7 @@ def domain(
     disk_key,
     iso_key,
     ram=None,
+    networks=None,
     ):
     with pkg_resources.resource_stream('downburst', 'template.xml') as f:
         tree = etree.parse(f)
@@ -73,5 +74,28 @@ def domain(
     if ram is not None:
         (memory,) = tree.xpath('/domain/memory')
         memory.text = '{ram:d}'.format(ram=ram)
+
+    # <interface type='network'>
+    #   <source network='default'/>
+    #   <model type='virtio'/>
+    # </interface>
+    if networks is None:
+        networks = [{}]
+    for net in networks:
+        net_elem = etree.SubElement(
+            devices,
+            'interface',
+            type='network',
+            )
+        etree.SubElement(net_elem, 'model', type='virtio')
+        etree.SubElement(
+            net_elem,
+            'source',
+            network=net.get('source', 'default'),
+            )
+        mac = net.get('mac')
+        if mac is not None:
+            # <mac address='52:54:00:01:02:03'/>
+            etree.SubElement(net_elem, 'mac', address=mac)
 
     return tree

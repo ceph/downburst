@@ -26,10 +26,10 @@
     <!--   <target dev='hdc' bus='ide'/> -->
     <!--   <readonly/> -->
     <!-- </disk> -->
-    <interface type='network'>
-      <source network='default'/>
-      <model type='virtio'/>
-    </interface>
+    <!-- <interface type='network'> -->
+    <!--   <source network='default'/> -->
+    <!--   <model type='virtio'/> -->
+    <!-- </interface> -->
     <serial type='pty'>
       <target port='0'/>
     </serial>

@@ -1,0 +1,8 @@
+# You can explicitly choose what libvirt networks to connect the vm
+# to. Default is one interface in the ``default`` network, with a
+# randomly assigned MAC.
+downburst:
+  networks:
+    - source: green
+      mac: 52:54:00:42:42:42
+    - source: yellow
