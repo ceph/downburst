@@ -23,7 +23,8 @@ def gen_meta(
     for path in extra_meta:
         with file(path) as f:
             extra_meta_data = yaml.safe_load(f)
-            meta_data.update(extra_meta_data)
+            if extra_meta_data is not None:
+                meta_data.update(extra_meta_data)
 
     return meta_data
 
@@ -49,7 +50,8 @@ def gen_user(
             if f.readline() == '#cloud-config-archive\n':
                 # merge it into ours
                 extra_user_data = yaml.safe_load(f)
-                user_data.extend(extra_user_data)
+                if extra_user_data is not None:
+                    user_data.extend(extra_user_data)
             else:
                 # some other format; slap it in as a single string
                 f.seek(0)
