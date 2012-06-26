@@ -39,11 +39,11 @@ def create(args):
         extra_user=args.user_data,
         )
 
-    capacity = meta_data.get('downburst', {}).get('disk-size')
+    capacity = meta_data.get('downburst', {}).get('disk-size', 10 * 2**30)
     clonexml = template.volume_clone(
         name='{name}.img'.format(name=args.name),
         parent_vol=vol,
-        capacity=2147483648*5,
+        capacity=capacity,
         )
     clone = pool.createXML(etree.tostring(clonexml), flags=0)
 
