@@ -22,6 +22,8 @@ You can install Downburst like any other Python package, but it also
 comes with a convenient bootstrap script that sets it up in a virtual
 environment under the source directory. Just run::
 
+	git clone https://github.com/ceph/downburst.git
+	cd downburst
 	./bootstrap
 
 And from there on, use::
