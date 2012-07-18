@@ -30,6 +30,7 @@ setup(
         'setuptools',
         'requests',
         'lxml',
+        'PyYaml',
         ] + install_requires,
 
     tests_require=[
