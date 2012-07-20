@@ -4,7 +4,7 @@ set -e
 if command -v lsb_release >/dev/null 2>&1; then
     case "$(lsb_release --id --short)" in
 	Ubuntu|Debian)
-	    for package in python-virtualenv python-dev libxml2-dev libxslt1-dev python-libvirt; do
+	    for package in python-virtualenv python-dev libxml2-dev libxslt1-dev python-libvirt genisoimage; do
 		if [ "$(dpkg --status -- $package 2>/dev/null|sed -n 's/^Status: //p')" != "install ok installed" ]; then
                     # add a space after old values
 		    missing="${missing:+$missing }$package"
