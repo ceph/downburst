@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 URLPREFIX = 'https://cloud-images.ubuntu.com/precise/current/'
-URLNAME = 'precise-server-cloudimg-amd64-disk1.img'
 
 PREFIX = 'precise-server-cloudimg-amd64-disk1.'
 SUFFIX = '.img'
