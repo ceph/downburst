@@ -1,0 +1,11 @@
+#cloud-config-archive
+
+# eject the cdrom (containing the cloud-init metadata)
+# as a signal that we've reached full functionality;
+# you can poll this via libvirt with
+#
+#  virsh qemu-monitor-command DOMAIN --cmd '{"execute": "query-block"}'
+#
+- |
+  #!/bin/sh
+  exec eject /dev/cdrom

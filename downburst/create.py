@@ -9,6 +9,7 @@ from . import iso
 from . import exc
 from . import meta
 from . import template
+from . import wait
 
 
 log = logging.getLogger(__name__)
@@ -39,6 +40,16 @@ def create(args):
         name=args.name,
         extra_user=args.user_data,
         )
+
+    if args.wait:
+        user_data.append("""\
+#!/bin/sh
+# eject the cdrom (containing the cloud-init metadata)
+# as a signal that we've reached full functionality;
+# this is used by ``downburst create --wait``
+exec eject /dev/cdrom
+""")
+
     capacity = meta_data.get('downburst', {}).get('disk-size', '10G')
     capacity = dehumanize.parse(capacity)
 
@@ -71,6 +82,10 @@ def create(args):
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
 
+    if args.wait:
+        log.debug('Waiting for vm to be initialized...')
+        wait.wait_for_cdrom_eject(dom)
+
 
 def make(parser):
     """
@@ -87,6 +102,11 @@ def make(parser):
         metavar='FILE',
         action='append',
         help='extra meta-data, must contain a yaml mapping',
+        )
+    parser.add_argument(
+        '--wait',
+        action='store_true',
+        help='wait for VM to initialize',
         )
     parser.add_argument(
         'name',
