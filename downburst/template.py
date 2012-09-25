@@ -40,6 +40,7 @@ def domain(
     disk_key,
     iso_key,
     ram=None,
+    cpus=None,
     networks=None,
     ):
     with pkg_resources.resource_stream('downburst', 'template.xml') as f:
@@ -74,6 +75,10 @@ def domain(
     if ram is not None:
         (memory,) = tree.xpath('/domain/memory')
         memory.text = '{ram:d}'.format(ram=ram)
+
+    if cpus is not None:
+        (vcpu,) = tree.xpath('/domain/vcpu')
+        vcpu.text = '{cpus:d}'.format(cpus=cpus)
 
     # <interface type='network'>
     #   <source network='default'/>

@@ -55,12 +55,14 @@ def create(args):
         )
 
     ram = meta_data.get('downburst', {}).get('ram')
+    cpus = meta_data.get('downburst', {}).get('cpus')
     networks = meta_data.get('downburst', {}).get('networks')
     domainxml = template.domain(
         name=args.name,
         disk_key=clone.key(),
         iso_key=iso_vol.key(),
         ram=ram,
+        cpus=cpus,
         networks=networks,
         )
     dom = conn.defineXML(etree.tostring(domainxml))
