@@ -3,6 +3,7 @@ import logging
 
 from lxml import etree
 
+from . import dehumanize
 from . import image
 from . import iso
 from . import exc
@@ -38,8 +39,9 @@ def create(args):
         name=args.name,
         extra_user=args.user_data,
         )
+    capacity = meta_data.get('downburst', {}).get('disk-size', '10G')
+    capacity = dehumanize.parse(capacity)
 
-    capacity = meta_data.get('downburst', {}).get('disk-size', 10 * 2**30)
     clonexml = template.volume_clone(
         name='{name}.img'.format(name=args.name),
         parent_vol=vol,
@@ -55,6 +57,7 @@ def create(args):
         )
 
     ram = meta_data.get('downburst', {}).get('ram')
+    ram = dehumanize.parse(ram)
     cpus = meta_data.get('downburst', {}).get('cpus')
     networks = meta_data.get('downburst', {}).get('networks')
     domainxml = template.domain(

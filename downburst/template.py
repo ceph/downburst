@@ -73,6 +73,9 @@ def domain(
     etree.SubElement(disk, 'target', dev='hdc', bus='ide')
 
     if ram is not None:
+        # default unit is kibibytes, and libvirt <0.9.11 doesn't
+        # support changing that
+        ram = int(round(ram/1024.0))
         (memory,) = tree.xpath('/domain/memory')
         memory.text = '{ram:d}'.format(ram=ram)
 
