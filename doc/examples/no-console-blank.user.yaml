@@ -1,0 +1,15 @@
+#upstart-job
+description "Prevent console blanking"
+
+start on (starting tty1
+  or starting tty2
+  or starting tty3
+  or starting tty4
+  or starting tty5
+  or starting tty6)
+
+task
+
+instance $JOB
+
+exec setterm -blank 0 -powersave off <"/dev/$JOB" >"/dev/$JOB"
