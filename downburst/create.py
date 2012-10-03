@@ -69,7 +69,7 @@ def create(args):
         networks=networks,
         )
     dom = conn.defineXML(etree.tostring(domainxml))
-    dom.create()
+    dom.createWithFlags(libvirt.VIR_DOMAIN_START_PAUSED)
 
 
 def make(parser):
