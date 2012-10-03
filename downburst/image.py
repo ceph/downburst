@@ -1,3 +1,4 @@
+import collections
 import hashlib
 import logging
 import requests
@@ -18,6 +19,9 @@ PREFIX = 'precise-server-cloudimg-amd64-disk1.'
 SUFFIX = '.img'
 
 
+Image = collections.namedtuple('Image', ['serial', 'name'])
+
+
 def list_cloud_images(pool):
     """
     List all Ubuntu 12.04 Cloud image in the libvirt pool.
@@ -33,28 +37,37 @@ def list_cloud_images(pool):
             # no serial number in the middle
             continue
         # found one!
-        log.debug('Saw image: %s', name)
-        yield name
+        serial = name[len(PREFIX):-len(SUFFIX)]
+        log.debug('Saw image: %s %s', serial, name)
+        yield Image(serial=serial, name=name)
 
 
-def find_cloud_image(pool):
+def find_cloud_image(pool, serial=None):
     """
     Find an Ubuntu 12.04 Cloud image in the libvirt pool.
     Return the name.
     """
-    names = list_cloud_images(pool)
+    images = list_cloud_images(pool)
+
     # converting into a list because max([]) raises ValueError, and we
     # really don't want to confuse that with exceptions from inside
     # the generator
-    names = list(names)
+    images = list(images)
 
-    if not names:
+    if not images:
         log.debug('No cloud images found.')
+        return None
+
+    if serial is not None:
+        for img in images:
+            if img.serial == serial:
+                return img
+        log.debug('No cloud image found with serial %r', serial)
         return None
 
     # the build serial is zero-padded, hence alphabetically sortable;
     # max is the latest image
-    return max(names)
+    return max(images)
 
 
 def upload_volume(vol, fp, sha512):
@@ -87,11 +100,11 @@ def ensure_cloud_image(conn):
     pool = conn.storagePoolLookupByName('default')
 
     log.debug('Listing cloud image in libvirt...')
-    name = find_cloud_image(pool=pool)
-    if name is not None:
+    image = find_cloud_image(pool=pool)
+    if image is not None:
         # all done
-        log.debug('Already have cloud image: %s', name)
-        vol = pool.storageVolLookupByName(name)
+        log.debug('Already have cloud image: %s', image.name)
+        vol = pool.storageVolLookupByName(image.name)
         return vol
 
     log.debug('Discovering cloud images...')
