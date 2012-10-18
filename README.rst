@@ -63,7 +63,7 @@ complain all the time.
 
 To set it up, run this once::
 
-	downburst generate-ssh-key >NAME.user.yaml
+	downburst gen-ssh-key >NAME.user.yaml
 
 And from there on, recreate the vm (after deleting it) with::
 
