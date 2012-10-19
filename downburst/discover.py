@@ -1,4 +1,5 @@
 import requests
+import json
 
 
 BASE_URL = 'https://cloud-images.ubuntu.com/'
@@ -27,7 +28,10 @@ def extract(catalog):
 def fetch():
     r = requests.get(URL)
     r.raise_for_status()
-    catalog = r.json
+    try:
+        catalog = r.json
+    except AttributeError:
+        catalog = json.loads(r.content)
     return catalog
 
 
