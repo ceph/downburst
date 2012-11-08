@@ -39,7 +39,29 @@ Usage
 You need to give a unique name to your vm. This will become the
 hostname of the vm, and the libvirt domain name. Run::
 
-	downburst create NAME
+	downburst -C URI create NAME
+
+The URI is the alias set in uri_aliases in ~/.libvirt/libvirt.conf. Example::
+
+    uri_aliases = [
+        'vercoi01=qemu+ssh://ubuntu@vercoi01.front.sepia.ceph.com/system?no_tty',
+        'vercoi02=qemu+ssh://ubuntu@vercoi02.front.sepia.ceph.com/system?no_tty',
+        'vercoi03=qemu+ssh://ubuntu@vercoi03.front.sepia.ceph.com/system?no_tty',
+        'vercoi04=qemu+ssh://ubuntu@vercoi04.front.sepia.ceph.com/system?no_tty',
+        'vercoi05=qemu+ssh://ubuntu@vercoi05.front.sepia.ceph.com/system?no_tty',
+        'vercoi06=qemu+ssh://ubuntu@vercoi06.front.sepia.ceph.com/system?no_tty',
+        'vercoi07=qemu+ssh://ubuntu@vercoi07.front.sepia.ceph.com/system?no_tty',
+        'vercoi08=qemu+ssh://ubuntu@vercoi08.front.sepia.ceph.com/system?no_tty',
+        'senta01=qemu+ssh://ubuntu@senta01.front.sepia.ceph.com/system?no_tty',
+        'senta02=qemu+ssh://ubuntu@senta02.front.sepia.ceph.com/system?no_tty',
+        'senta03=qemu+ssh://ubuntu@senta03.front.sepia.ceph.com/system?no_tty',
+        'senta04=qemu+ssh://ubuntu@senta04.front.sepia.ceph.com/system?no_tty',
+        ]
+
+
+You can delete a guest with (use caution)::
+
+        downburst -c URI destroy NAME
 
 By default, your local SSH public key (grabbed from
 ``~/.ssh/id_rsa.pub``) is authorized to log in as ``ubuntu``.
@@ -53,6 +75,19 @@ snippets; if you repeat the argument, the files will be merged::
 See ``doc/examples/`` for ideas on meta-data and user-data usage, and
 explore the Ubuntu links above.
 
+Valid Downburst options in meta yaml with their defaults if undefined:
+
+disk:          (disk space)
+                Default 10G. Example: 20G
+ram:           (ram amount)
+                Default 512M. Example: 2G
+cpu:           (cpu/core count)
+                Default 1. Example 4
+networks:      (what nics/networks/mac addresses)::
+
+                Default Nat. Example:
+                    - source: front
+                      mac: 52:54:00:5a:aa:ee
 
 Static SSH key generation
 =========================
