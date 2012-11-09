@@ -89,6 +89,13 @@ networks:      (what nics/networks/mac addresses)::
                     - source: front
                       mac: 52:54:00:5a:aa:ee
 
+distro:        (distro type)
+                Default ubuntu. Example centos
+distroversion: (distro version)
+                Default (if ubuntu) "12.04". Example "12.10"
+
+Distro and distroversion can also be set during command line creation with --distro=value and --distroversion=value
+
 Static SSH key generation
 =========================
 

@@ -1,0 +1,24 @@
+#Set the distro and distro version in the yaml file like so. Valid distros as of Nov 2012:
+#centos
+#ubuntu
+#fedora
+#opensuse
+#
+#Distro version should be in quotes to ensure proper operation although it should work without it.
+
+downburst:
+ distro: opensuse
+ distroversion: "12.2"
+
+
+#Full example of meta yaml file:
+
+downburst:
+ ram:  1G
+ disk-size: 3G
+ cpus: 1
+ distro: ubuntu
+ distroversion: "12.10"
+ networks:
+    - source: front
+      mac: 52:54:00:5a:aa:ee

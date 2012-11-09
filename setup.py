@@ -20,7 +20,7 @@ setup(
 
     author='Tommi Virtanen',
     author_email='tommi.virtanen@inktank.com',
-    description='Run Ubuntu 12.04 Cloud images on libvirt virtual machines',
+    description='Run Cloud images on libvirt virtual machines',
     long_description=read('README.rst'),
     license='MIT',
     keywords='libvirt virtualization',

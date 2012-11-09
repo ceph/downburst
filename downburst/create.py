@@ -11,7 +11,6 @@ from . import meta
 from . import template
 from . import wait
 
-
 log = logging.getLogger(__name__)
 
 
@@ -21,6 +20,38 @@ def create(args):
     if conn is None:
         raise exc.LibvirtConnectionError()
 
+    meta_data = meta.gen_meta(
+        name=args.name,
+        extra_meta=args.meta_data,
+        )
+
+    user_data = meta.gen_user(
+        name=args.name,
+        extra_user=args.user_data,
+        )
+
+    if args.distro:
+        distro = args.distro
+    else:
+        distro = meta_data.get('downburst', {}).get('distro')
+
+    if distro is None:
+        distro = "ubuntu"
+
+    if args.distroversion:
+        distroversion = args.distroversion
+    else:
+        distroversion = meta_data.get('downburst', {}).get('distroversion')
+
+    if distroversion is None:
+        defaultversion = dict(
+            ubuntu="12.04",
+            fedora="17",
+            centos="6.3",
+            opensuse="12.2",
+            )
+        distroversion = defaultversion[distro]
+
     # check if the vm exists already, complain if so. this would
     # normally use conn.lookupByName, but that logs on all errors;
     # avoid the noise.
@@ -29,17 +60,7 @@ def create(args):
 
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
-
-    vol = image.ensure_cloud_image(conn=conn)
-
-    meta_data = meta.gen_meta(
-        name=args.name,
-        extra_meta=args.meta_data,
-        )
-    user_data = meta.gen_user(
-        name=args.name,
-        extra_user=args.user_data,
-        )
+    vol = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion)
 
     if args.wait:
         user_data.append("""\
@@ -109,6 +130,16 @@ def make(parser):
         help='wait for VM to initialize',
         )
     parser.add_argument(
+        '--distro',
+        metavar='DISTRO',
+        help='Distribution of the vm',
+        )
+    parser.add_argument(
+        '--distroversion',
+        metavar='DISTROVERSION',
+        help='Distribution version of the vm',
+        )
+    parser.add_argument(
         'name',
         metavar='NAME',
         help='unique name to give to the vm',
@@ -116,6 +147,8 @@ def make(parser):
         )
     parser.set_defaults(
         func=create,
+        distro=[],
+        distroversion=[],
         user_data=[],
         meta_data=[],
         )
