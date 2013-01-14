@@ -41,6 +41,12 @@ hostname of the vm, and the libvirt domain name. Run::
 
 	downburst -C URI create NAME
 
+If this tool is not being used for an Inktank machine or an Inktank employee
+then you should pass the --nokey option to not install the default inktank
+ssh key to the created guest's authorized_hosts file.
+
+        downburst -C URI create NAME --nokey
+
 The URI is the alias set in uri_aliases in ~/.libvirt/libvirt.conf. Example::
 
     uri_aliases = [

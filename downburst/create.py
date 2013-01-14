@@ -23,6 +23,7 @@ def create(args):
     meta_data = meta.gen_meta(
         name=args.name,
         extra_meta=args.meta_data,
+        nokey=args.nokey,
         )
 
     user_data = meta.gen_user(
@@ -138,6 +139,11 @@ def make(parser):
         '--distroversion',
         metavar='DISTROVERSION',
         help='Distribution version of the vm',
+        )
+    parser.add_argument(
+        '--nokey',
+        action='store_true',
+        help='Do not add the default ssh key (from Inktank teuthology) to authorized_hosts. Should be used for non-Inktank machines',
         )
     parser.add_argument(
         'name',
