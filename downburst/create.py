@@ -50,8 +50,20 @@ def create(args):
             fedora="17",
             centos="6.3",
             opensuse="12.2",
+            sles="11-sp2",
             )
         distroversion = defaultversion[distro]
+
+    if args.arch:
+        arch = args.arch
+    else:
+        arch = meta_data.get('downburst', {}).get('arch')
+
+    if arch == "x86_64":
+        arch = "amd64"
+
+    if arch is None:
+        arch = "amd64"
 
     # check if the vm exists already, complain if so. this would
     # normally use conn.lookupByName, but that logs on all errors;
@@ -61,7 +73,7 @@ def create(args):
 
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
-    vol = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion)
+    vol = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion, arch=arch)
 
     if args.wait:
         user_data.append("""\
@@ -144,6 +156,11 @@ def make(parser):
         '--nokey',
         action='store_true',
         help='Do not add the default ssh key (from Inktank teuthology) to authorized_hosts. Should be used for non-Inktank machines',
+        )
+    parser.add_argument(
+        '--arch',
+        metavar='arch',
+        help='Architecture of the vm (amd64/i386)',
         )
     parser.add_argument(
         'name',

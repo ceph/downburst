@@ -100,7 +100,9 @@ distro:        (distro type)
 distroversion: (distro version)
                 Default (if ubuntu) "12.04". Example "12.10"
 
-Distro and distroversion can also be set during command line creation with --distro=value and --distroversion=value
+arch:          (Image architecture) "i386" or "amd64"
+
+Distro/distroversion/arch can also be set during command line creation with --distro=value or --distroversion=value or --arch=value
 
 Static SSH key generation
 =========================
