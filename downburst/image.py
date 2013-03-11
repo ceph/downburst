@@ -96,7 +96,7 @@ def ensure_cloud_image(conn, distro, distroversion, arch):
         return vol
 
     log.debug('Discovering cloud images...')
-    image = discover.get(distro=distro, distroversion=distroversion)
+    image = discover.get(distro=distro, distroversion=distroversion, arch=arch)
     log.debug('Will fetch serial number: %s', image['serial'])
 
     url = image['url']
