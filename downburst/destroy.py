@@ -1,5 +1,6 @@
 import libvirt
 import logging
+import re
 
 log = logging.getLogger(__name__)
 
@@ -7,6 +8,10 @@ log = logging.getLogger(__name__)
 def looks_like_downburst_volume(name, vol_name):
     # {name}.img: the primary disk for the vm
     if vol_name == '{0}.img'.format(name):
+        return True
+
+    # additional disks for the vm
+    if re.match(name + '-(\d+).img', vol_name):
         return True
 
     # cloud-init.{name}.iso: cloud-init meta-data CD-ROM

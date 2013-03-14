@@ -85,22 +85,25 @@ Valid Downburst options in meta yaml with their defaults if undefined:
 
 disk:          (disk space)
                 Default 10G. Example: 20G
+additional-disks:   (number of additional drives for the guest)
+                Default 0. Example: 5 (for 5 additional drives)
+additional-disks-size:  (Size of the additional disks)
+                Default 10G. Example: 100G
 ram:           (ram amount)
                 Default 512M. Example: 2G
 cpu:           (cpu/core count)
                 Default 1. Example 4
 networks:      (what nics/networks/mac addresses)::
-
                 Default Nat. Example:
                     - source: front
                       mac: 52:54:00:5a:aa:ee
-
 distro:        (distro type)
                 Default ubuntu. Example centos
 distroversion: (distro version)
                 Default (if ubuntu) "12.04". Example "12.10"
+arch:          (Image architecture)
+                Default "amd64, can be "i386" or "amd64/x86_64"
 
-arch:          (Image architecture) "i386" or "amd64"
 
 Distro/distroversion/arch can also be set during command line creation with --distro=value or --distroversion=value or --arch=value
 

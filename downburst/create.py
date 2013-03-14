@@ -86,6 +86,9 @@ exec eject /dev/cdrom
 
     capacity = meta_data.get('downburst', {}).get('disk-size', '10G')
     capacity = dehumanize.parse(capacity)
+    additional_disks = meta_data.get('downburst', {}).get('additional-disks')
+    additional_disks_size = meta_data.get('downburst', {}).get('additional-disks-size', '10G')
+    additional_disks_size = dehumanize.parse(additional_disks_size)
 
     clonexml = template.volume_clone(
         name='{name}.img'.format(name=args.name),
@@ -101,6 +104,25 @@ exec eject /dev/cdrom
         user_data=user_data,
         )
 
+    # We want the range to be 2 - X depending on disk count.
+    # Since there is already a boot volume we want the image
+    # names to be appended with -2, -3, -4, etc... for the 
+    # additional disks.
+    additional_disks_key = []
+    if additional_disks is not None:
+        for disknum in range(1, additional_disks + 1):
+            disknum += 1
+            diskname = args.name + '-' + str(disknum) + '.img'
+            diskxml = template.volume(
+                name=diskname,
+                capacity=additional_disks_size,
+                format_='raw',
+                sparse=False,
+                )
+            additional_disks_key.append(pool.createXML(etree.tostring(diskxml), flags=0).key())
+    if not additional_disks_key:
+        additional_disks_key = None
+
     ram = meta_data.get('downburst', {}).get('ram')
     ram = dehumanize.parse(ram)
     cpus = meta_data.get('downburst', {}).get('cpus')
@@ -112,6 +134,7 @@ exec eject /dev/cdrom
         ram=ram,
         cpus=cpus,
         networks=networks,
+        additional_disks_key=additional_disks_key
         )
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()

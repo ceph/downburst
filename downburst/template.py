@@ -6,11 +6,13 @@ def volume(
     name,
     capacity=0,
     format_=None,
+    sparse=True,
     ):
     root = etree.Element('volume')
     etree.SubElement(root, 'name').text = name
     etree.SubElement(root, 'capacity').text = '{0:d}'.format(capacity)
-    etree.SubElement(root, 'allocation').text = '0'
+    if sparse:
+        etree.SubElement(root, 'allocation').text = '0'
     target = etree.SubElement(root, 'target')
     if format_ is None:
         format_ = 'qcow2'
@@ -42,6 +44,7 @@ def domain(
     ram=None,
     cpus=None,
     networks=None,
+    additional_disks_key=None,
     ):
     with pkg_resources.resource_stream('downburst', 'template.xml') as f:
         tree = etree.parse(f)
@@ -60,6 +63,28 @@ def domain(
     etree.SubElement(disk, 'driver', name='qemu', type='qcow2')
     etree.SubElement(disk, 'source', file=disk_key)
     etree.SubElement(disk, 'target', dev='vda', bus='virtio')
+
+    if additional_disks_key is not None:
+        letters = 'abcdefghijklmnopqrstuvwxyz'
+        x = 0
+        for key in additional_disks_key:
+            x += 1
+
+            # Skip a because vda = boot drive. Drives should start
+            # at vdb and continue: vdc, vdd, etc...
+
+            blockdevice = 'vd' + letters[x]
+
+            # <disk type='file' device='disk'>
+            #   <driver name='qemu' type='raw'/>
+            #   <source file='/var/lib/libvirt/images/NAME.img'/>
+            #   <target dev='vdX' bus='virtio'/>
+            # </disk>
+            (devices,) = tree.xpath('/domain/devices')
+            disk = etree.SubElement(devices, 'disk', type='file', device='disk')
+            etree.SubElement(disk, 'driver', name='qemu', type='raw')
+            etree.SubElement(disk, 'source', file=key)
+            etree.SubElement(disk, 'target', dev=blockdevice, bus='virtio')
 
     # <disk type='file' device='cdrom'>
     #   <driver name='qemu' type='raw'/>
