@@ -1,8 +1,9 @@
-#Set the distro and distro version in the yaml file like so. Valid distros as of Nov 2012:
+#Set the distro and distro version in the yaml file like so. Valid distros as of May 2013:
 #centos
 #ubuntu
 #fedora
 #opensuse
+#rhel
 #
 #Distro version should be in quotes to ensure proper operation although it should work without it.
 
