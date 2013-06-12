@@ -58,12 +58,12 @@ def find_cloud_image(pool, distro, distroversion, arch):
     return max(names)
 
 
-def upload_volume(vol, fp, sha512):
+def upload_volume(vol, fp, hash_function, checksum):
     """
     Upload a volume into a libvirt pool.
     """
 
-    h = hashlib.sha512()
+    h = hashlib.new(hash_function)
     stream = vol.connect().newStream(flags=0)
     vol.upload(stream=stream, offset=0, length=0, flags=0)
 
@@ -73,7 +73,7 @@ def upload_volume(vol, fp, sha512):
         return data
     stream.sendAll(handler, None)
 
-    if h.hexdigest() != sha512:
+    if h.hexdigest() != checksum:
         stream.abort()
         raise exc.ImageHashMismatchError()
     stream.finish()
@@ -126,7 +126,8 @@ def ensure_cloud_image(conn, distro, distroversion, arch):
     upload_volume(
         vol=vol,
         fp=r.raw,
-        sha512=image['sha512'],
+        hash_function=image['hash_function'],
+        checksum=image['checksum'],
         )
     # TODO only here to autodetect capacity
     pool.refresh(flags=0)
