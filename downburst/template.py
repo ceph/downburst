@@ -45,10 +45,12 @@ def domain(
     cpus=None,
     networks=None,
     additional_disks_key=None,
+    hypervisor='kvm'
     ):
     with pkg_resources.resource_stream('downburst', 'template.xml') as f:
         tree = etree.parse(f)
     (domain,) = tree.xpath('/domain')
+    domain.set('type', hypervisor)
 
     n = etree.SubElement(domain, 'name')
     n.text = name
