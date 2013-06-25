@@ -135,7 +135,8 @@ exec eject /dev/cdrom
         ram=ram,
         cpus=cpus,
         networks=networks,
-        additional_disks_key=additional_disks_key
+        additional_disks_key=additional_disks_key,
+        hypervisor=args.hypervisor
         )
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
@@ -187,6 +188,10 @@ def make(parser):
         help='Architecture of the vm (amd64/i386)',
         )
     parser.add_argument(
+        '--hypervisor',
+        metavar='HYPERVISOR',
+        help='The hypervisor used (kvm)'),
+    parser.add_argument(
         'name',
         metavar='NAME',
         help='unique name to give to the vm',
@@ -198,4 +203,5 @@ def make(parser):
         distroversion=[],
         user_data=[],
         meta_data=[],
+        hypervisor='kvm',
         )
