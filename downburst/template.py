@@ -2,6 +2,22 @@ from lxml import etree
 import pkg_resources
 
 
+def lxc(
+    network,
+    mac,
+    rootfs,
+    ):
+    config =[
+        'lxc.tty=5',
+        'lxc.pts=1024',
+        'lxc.network.type = veth',
+        'lxc.network.flags = up',
+        'lxc.network.link = br-{network}'.format(network=network),
+        'lxc.network.hwaddr = {mac}'.format(mac=mac),
+        'lxc.rootfs = {rootfs}'.format(rootfs=rootfs),
+        ],
+    return config
+
 def volume(
     name,
     capacity=0,

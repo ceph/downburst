@@ -2,6 +2,8 @@ import libvirt
 import logging
 import re
 
+from . import lxc
+
 log = logging.getLogger(__name__)
 
 
@@ -28,6 +30,10 @@ def looks_like_downburst_volume(name, vol_name):
 
 
 def destroy(args):
+    if args.lxc:
+        lxc.destroylxc(args)
+    return
+
     log.debug('Connecting to libvirt...')
     conn = libvirt.open(args.connect)
     if conn is None:

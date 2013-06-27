@@ -3,9 +3,11 @@
 ==========================================================
 
 Downburst is a tool for quickly creating virtual machines on
-libvirt. It uses Ubuntu's Cloud Images and qcow2 copy-on-write clones
-to make a VM creation practically instantaneous, customizing them at
-boot time with cloud-init.
+libvirt as well as limited suport for LXC containers for better
+CPU effeciency and faster disk I/O to avoid overheads. It uses 
+Ubuntu's Cloud Images and qcow2 copy-on-write clones to make a VM 
+creation practically instantaneous, customizing them at boot time
+with cloud-init.
 
 For more information on Ubuntu Cloud Images, please refer to:
 
@@ -35,11 +37,25 @@ You can also symlink that to e.g. ``~/bin/``.
 
 Usage
 =====
-
 You need to give a unique name to your vm. This will become the
 hostname of the vm, and the libvirt domain name. Run::
 
 	downburst -C URI create NAME
+
+Alternatively you can create an LXC container as well. Run::
+
+        downburst -l SERVER create NAME
+
+LXC has some limitations. Disk limits can't be set due to using the native
+file-system (which is one of the big reasons to use lxc) and memory limits
+can be set if the generic ubuntu kernel had the right support. Since unlike
+true vm's containers will share memory resources and not use memory for data
+in disk cache so lack of being able to set memory should not be a problem.
+Due to LXC's cpu count being by limiting which CPU's specifically you use
+not just X number of course CPU count is also not supported (will be the
+same as the host machine). 
+
+LXC requires ssh access to the machine and assumes ubuntu user with sudo.
 
 If this tool is not being used for an Inktank machine or an Inktank employee
 then you should pass the --nokey option to not install the default inktank

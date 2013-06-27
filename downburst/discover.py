@@ -2,8 +2,6 @@ import requests
 import re
 import csv
 
-URL="http://ceph.com/cloudinit/"
-
 class UbuntuHandler:
     URL = 'http://cloud-images.ubuntu.com'
 
@@ -99,17 +97,26 @@ class UbuntuHandler:
 
 HANDLERS = {'ubuntu': UbuntuHandler()}
 
-def get(distro, distroversion, arch):
-    if distro in HANDLERS:
+def get(distro, distroversion, arch, lxc=False):
+    if lxc:
+        URL="http://ceph.com/cloudlxc/"
+    else:
+        URL="http://ceph.com/cloudinit/"
+
+    if distro in HANDLERS and not lxc:
         handler = HANDLERS[distro]
         return handler(distroversion, arch)
     r = requests.get(URL)
     r.raise_for_status()
     c = re.sub('.*a href="', '', r.content)
-    content = re.sub('.img">.*', '.img', c)
+    if lxc:
+        content = re.sub('.tar.gz">.*', '.tar.gz', c)
+        imagesuffix = '-cloudimg-' + arch + '.tar.gz'
+    else:
+        content = re.sub('.img">.*', '.img', c)
+        imagesuffix = '-cloudimg-' + arch + '.img'
     list = re.findall('.*-cloudimg-.*', content)
     imageprefix = distro + '-' + distroversion + '-(\d+)'
-    imagesuffix = '-cloudimg-' + arch + '.img'
     imagestring = imageprefix + imagesuffix
     file = search(imagestring=imagestring, list=list)
     if file is not False:
@@ -122,7 +129,7 @@ def get(distro, distroversion, arch):
         returndict['hash_function'] = 'sha512'
         return returndict
     else:
-        raise NameError('Image not found on server at ' + URL)
+        raise NameError('Image for ' + distro + ' Ver: ' + distroversion + ' not found on server at ' + URL)
 
 def search(imagestring, list):
     for imagename in list:

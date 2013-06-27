@@ -54,6 +54,12 @@ def write_meta(meta_data, fp):
         )
     fp.flush()
 
+def read_meta(meta_data):
+    metayaml = yaml.safe_dump(
+        data=meta_data,
+        default_flow_style=False,
+        )
+    return metayaml
 
 def gen_user(
     name,

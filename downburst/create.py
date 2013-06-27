@@ -10,16 +10,12 @@ from . import exc
 from . import meta
 from . import template
 from . import wait
+from . import lxc
 
 log = logging.getLogger(__name__)
 
 
 def create(args):
-    log.debug('Connecting to libvirt...')
-    conn = libvirt.open(args.connect)
-    if conn is None:
-        raise exc.LibvirtConnectionError()
-
     meta_data = meta.gen_meta(
         name=args.name,
         extra_meta=args.meta_data,
@@ -65,6 +61,16 @@ def create(args):
 
     if arch is None:
         arch = "amd64"
+
+    if args.lxc:
+        lxc.createlxc(args, meta_data, user_data, distro, distroversion, arch)
+        return
+
+    log.debug('Connecting to libvirt...')
+    conn = libvirt.open(args.connect)
+    if conn is None:
+        raise exc.LibvirtConnectionError()
+
 
     # check if the vm exists already, complain if so. this would
     # normally use conn.lookupByName, but that logs on all errors;

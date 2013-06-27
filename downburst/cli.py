@@ -23,6 +23,11 @@ def parse_args():
         metavar='URI',
         help='libvirt URI to connect to',
         )
+    parser.add_argument(
+        '-l', '--lxc',
+        metavar='LXC',
+        help='LXC host to connect to',
+        )
     sub = parser.add_subparsers(
         title='commands',
         metavar='COMMAND',
