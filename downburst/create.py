@@ -52,6 +52,7 @@ def create(args):
             opensuse="12.2",
             sles="11-sp2",
             rhel="6.3",
+            debian='6.0'
             )
         distroversion = defaultversion[distro]
 
