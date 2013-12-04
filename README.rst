@@ -83,7 +83,7 @@ explore the Ubuntu links above.
 
 Valid Downburst options in meta yaml with their defaults if undefined:
 
-disk:          (disk space)
+disk-size:      (disk space)
                 Default 10G. Example: 20G
 additional-disks:   (number of additional drives for the guest)
                 Default 0. Example: 5 (for 5 additional drives)
