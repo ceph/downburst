@@ -107,6 +107,10 @@ arch:          (Image architecture)
 
 Distro/distroversion/arch can also be set during command line creation with --distro=value or --distroversion=value or --arch=value
 
+All available distributions/versions can be listed by running:
+
+        downburst list
+
 Static SSH key generation
 =========================
 

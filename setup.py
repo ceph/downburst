@@ -46,6 +46,7 @@ setup(
         'downburst.cli': [
             'create = downburst.create:make',
             'destroy = downburst.destroy:make',
+            'list = downburst.discover:make',
             'gen-ssh-key = downburst.gen_ssh_key:make',
             ],
 
