@@ -126,6 +126,7 @@ def get(distro, distroversion, arch):
         raise NameError('Image not found on server at ' + URL)
 
 def add_distro(distro, version, distro_and_versions):
+    # Create dict entry for Distro, append if exists.
     try:
         distro_and_versions[distro].append(version)
     except KeyError:
@@ -134,25 +135,34 @@ def add_distro(distro, version, distro_and_versions):
 def get_distro_list():
     ubuntu_url = 'http://cloud-images.ubuntu.com/query/released.latest.txt'
     distro_and_versions = {}
-    #Non ubuntu distro's
+
+    # Non ubuntu distro's
     r = requests.get(URL)
     r.raise_for_status()
-    #pull .img filenames from HTML:
+
+    # Pull .img filenames from HTML:
     c = re.sub('.*a href="', '', r.content)
     content = re.sub('.img">.*', '.img', c)
     list = re.findall('.*-cloudimg-.*img', content)
     for entry in list:
-        #Ignore ubuntu
+
+        # Ignore Ubuntu (we dont pull those from ceph.com)
         if not entry.startswith('ubuntu'):
+
             #Ignore sha512 files
             if 'sha512' not in entry:
                 if entry.endswith('.img'):
+
+                    # Pull Distro and Version values from Filenames
                     distro = entry.split('-')[0]
                     version = '-'.join(re.split('[0-9]{8}', entry)[0].strip('-').split('-')[1:])
                     add_distro(distro, str(version), distro_and_versions)
-    #Ubuntu:
+
+    # Grab Ubuntu list from Ubuntu server:
     r = requests.get(ubuntu_url)
     r.raise_for_status()
+
+    # Loop through latest codename list, convert to Version, add to dict.
     for line in r.content.rstrip().split('\n'):
         handler = UbuntuHandler()
         version = handler.get_version(line.split()[0])
@@ -160,12 +170,12 @@ def get_distro_list():
     return distro_and_versions
 
 def make(parser):
-    parser.set_defaults(func=print_distros)
-
-def print_distros(parser):
     """
     Print Available Distributions and Versions.
     """
+    parser.set_defaults(func=print_distros)
+
+def print_distros(parser):
     distro_and_versions =get_distro_list()
     for distro in sorted(distro_and_versions):
         version = distro_and_versions[distro]
