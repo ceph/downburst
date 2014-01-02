@@ -38,6 +38,10 @@ class UbuntuHandler:
                 major = version[0]
                 minor = version[1].split('.', 1)[0]
                 return self.VERSION_TO_RELEASE[major + "." + minor]
+
+            # Just use code/release name if no period in version.
+            else:
+                return distroversion
         except KeyError:
             return distroversion
 
