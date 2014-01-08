@@ -10,6 +10,7 @@ from . import exc
 from . import meta
 from . import template
 from . import wait
+from . import discover
 
 log = logging.getLogger(__name__)
 
@@ -43,6 +44,12 @@ def create(args):
         distroversion = args.distroversion
     else:
         distroversion = meta_data.get('downburst', {}).get('distroversion')
+
+    # If ubuntu distroversion contains non version (IE: quantal) convert to version:
+    if distroversion:
+        if distro == 'ubuntu' and ('.' not in distroversion):
+            handler = discover.UbuntuHandler()
+            distroversion = handler.get_version(distroversion)
 
     if distroversion is None:
         defaultversion = dict(
