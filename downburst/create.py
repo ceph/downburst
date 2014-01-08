@@ -82,7 +82,7 @@ def create(args):
 
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
-    vol = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion, arch=arch)
+    vol, raw = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion, arch=arch, forcenew=args.forcenew)
 
     if args.wait:
         user_data.append("""\
@@ -103,6 +103,7 @@ exec eject /dev/cdrom
         name='{name}.img'.format(name=args.name),
         parent_vol=vol,
         capacity=capacity,
+        raw=raw,
         )
     clone = pool.createXML(etree.tostring(clonexml), flags=0)
 
@@ -189,6 +190,11 @@ def make(parser):
         '--nokey',
         action='store_true',
         help='Do not add the default ssh key (from Inktank teuthology) to authorized_hosts. Should be used for non-Inktank machines',
+        )
+    parser.add_argument(
+        '--forcenew',
+        action='store_true',
+        help='Instead if the cloud-init image already exists, force the attempt to download newest available image',
         )
     parser.add_argument(
         '--arch',

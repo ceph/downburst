@@ -165,7 +165,7 @@ def get_distro_list():
 
             #Ignore sha512 files
             if 'sha512' not in entry:
-                if entry.endswith('.img'):
+                if entry.endswith('.img') or entry.endswith('.raw'):
 
                     # Pull Distro and Version values from Filenames
                     distro = entry.split('-')[0]
