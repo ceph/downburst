@@ -1,8 +1,21 @@
 import requests
 import re
 import csv
+import HTMLParser
 
 URL="http://ceph.com/cloudinit/"
+
+class Parser(HTMLParser.HTMLParser):
+    def __init__(self):
+        self.filenames = []
+        HTMLParser.HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        ret = []
+        if tag == 'a':
+            for key, val in attrs:
+                if  key == 'href' and (val.endswith('.img') or val.endswith('.raw')):
+                    self.filenames.append(val)
 
 class UbuntuHandler:
     URL = 'http://cloud-images.ubuntu.com'
@@ -24,7 +37,7 @@ class UbuntuHandler:
         '11.04': 'natty',
         '11.10': 'oneiric',
         '12.04': 'precise',
-        '12.12': 'quantal',
+        '12.10': 'quantal',
         '13.04': 'raring',
         '13.10': 'saucy',
         '14.04': 'trusty'}
@@ -38,10 +51,6 @@ class UbuntuHandler:
                 major = version[0]
                 minor = version[1].split('.', 1)[0]
                 return self.VERSION_TO_RELEASE[major + "." + minor]
-
-            # Just use code/release name if no period in version.
-            else:
-                return distroversion
         except KeyError:
             return distroversion
 
@@ -110,11 +119,12 @@ def get(distro, distroversion, arch):
         return handler(distroversion, arch)
     r = requests.get(URL)
     r.raise_for_status()
-    c = re.sub('.*a href="', '', r.content)
-    content = re.sub('.img">.*', '.img', c)
-    list = re.findall('.*-cloudimg-.*', content)
+    parser = Parser()
+    parser.feed(r.content)
+    parser.close()
+    list = parser.filenames
     imageprefix = distro + '-' + distroversion + '-(\d+)'
-    imagesuffix = '-cloudimg-' + arch + '.img'
+    imagesuffix = '-cloudimg-' + arch + '.(img|raw)'
     imagestring = imageprefix + imagesuffix
     file = search(imagestring=imagestring, list=list)
     if file is not False:
@@ -145,10 +155,10 @@ def get_distro_list():
     r.raise_for_status()
 
     # Pull .img filenames from HTML:
-    c = re.sub('.*a href="', '', r.content)
-    content = re.sub('.img">.*', '.img', c)
-    list = re.findall('.*-cloudimg-.*img', content)
-    for entry in list:
+    parser = Parser()
+    parser.feed(r.content)
+    parser.close()
+    for entry in parser.filenames:
 
         # Ignore Ubuntu (we dont pull those from ceph.com)
         if not entry.startswith('ubuntu'):
