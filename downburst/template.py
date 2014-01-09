@@ -7,12 +7,15 @@ def volume(
     capacity=0,
     format_=None,
     sparse=True,
+    raw = False,
     ):
     root = etree.Element('volume')
     etree.SubElement(root, 'name').text = name
     etree.SubElement(root, 'capacity').text = '{0:d}'.format(capacity)
     if sparse:
         etree.SubElement(root, 'allocation').text = '0'
+    if raw:
+        _format = 'raw'
     target = etree.SubElement(root, 'target')
     if format_ is None:
         format_ = 'qcow2'
@@ -24,16 +27,20 @@ def volume_clone(
     name,
     parent_vol,
     capacity=None,
+    raw = False
     ):
     (_type_, parent_capacity, _allocation) = parent_vol.info()
     if capacity is None:
         capacity = parent_capacity
-    root = volume(name=name, capacity=capacity)
-
+    type = 'qcow2'
+    sparse = False
+    if raw:
+       type = 'raw'
+       sparse = False
+    root = volume(name=name, capacity=capacity, sparse=sparse, raw=raw)
     backing = etree.SubElement(root, 'backingStore')
-    etree.SubElement(backing, 'format', type='qcow2')
+    etree.SubElement(backing, 'format', type=type)
     etree.SubElement(backing, 'path').text = parent_vol.key()
-
     return root
 
 
@@ -45,7 +52,8 @@ def domain(
     cpus=None,
     networks=None,
     additional_disks_key=None,
-    hypervisor='kvm'
+    hypervisor='kvm',
+    raw = False
     ):
     with pkg_resources.resource_stream('downburst', 'template.xml') as f:
         tree = etree.parse(f)
@@ -60,9 +68,12 @@ def domain(
     #   <source file='/var/lib/libvirt/images/NAME.img'/>
     #   <target dev='vda' bus='virtio'/>
     # </disk>
+    type = 'qcow2'
+    if raw:
+        type = 'raw'
     (devices,) = tree.xpath('/domain/devices')
     disk = etree.SubElement(devices, 'disk', type='file', device='disk')
-    etree.SubElement(disk, 'driver', name='qemu', type='qcow2')
+    etree.SubElement(disk, 'driver', name='qemu', type=type)
     etree.SubElement(disk, 'source', file=disk_key)
     etree.SubElement(disk, 'target', dev='vda', bus='virtio')
 

@@ -23,12 +23,13 @@ def list_cloud_images(pool, distro, distroversion, arch):
 
     PREFIX = distro+"-"+distroversion+"-"
     SUFFIX = '-cloudimg-'+arch+'.img'
+    SUFFIXRAW = '-cloudimg-'+arch+'.raw'
 
     for name in pool.listVolumes():
         log.debug('Considering image: %s', name)
         if not name.startswith(PREFIX):
             continue
-        if not name.endswith(SUFFIX):
+        if not (name.endswith(SUFFIX) or name.endswith(SUFFIXRAW)):
             continue
         if len(name) <= len(PREFIX) + len(SUFFIX):
             # no serial number in the middle
@@ -79,7 +80,7 @@ def upload_volume(vol, fp, hash_function, checksum):
     stream.finish()
 
 
-def ensure_cloud_image(conn, distro, distroversion, arch):
+def ensure_cloud_image(conn, distro, distroversion, arch, forcenew=False):
     """
     Ensure that the Ubuntu Cloud image is in the libvirt pool.
     Returns the volume.
@@ -89,25 +90,32 @@ def ensure_cloud_image(conn, distro, distroversion, arch):
 
     log.debug('Listing cloud image in libvirt...')
     name = find_cloud_image(pool=pool, distro=distro, distroversion=distroversion, arch=arch)
-    if name is not None:
-        # all done
-        log.debug('Already have cloud image: %s', name)
-        vol = pool.storageVolLookupByName(name)
-        return vol
+    raw = False
+    if not forcenew:
+        if name is not None:
+            # all done
+            if name.endswith('.raw'):
+                raw = True
+            log.debug('Already have cloud image: %s', name)
+            vol = pool.storageVolLookupByName(name)
+            return vol, raw
 
     log.debug('Discovering cloud images...')
     image = discover.get(distro=distro, distroversion=distroversion, arch=arch)
     log.debug('Will fetch serial number: %s', image['serial'])
 
     url = image['url']
-
+    if url.endswith('.raw'):
+        raw = True
     log.info('Downloading image: %s', url)
     r = requests.get(url)
     # volumes have no atomic completion marker; this will forever be
     # racy!
-
+    ext = '.img'
+    if raw:
+        ext = '.raw'
     PREFIX = distro+"-"+distroversion+"-"
-    SUFFIX = '-cloudimg-'+arch+'.img'
+    SUFFIX = '-cloudimg-'+arch+ext
 
     name = '{prefix}{serial}{suffix}'.format(
         prefix=PREFIX,
@@ -117,6 +125,7 @@ def ensure_cloud_image(conn, distro, distroversion, arch):
     log.debug('Creating libvirt volume: %s ...', name)
     volxml = template.volume(
         name=name,
+        raw=raw,
         # TODO we really should feed in a capacity, but we don't know
         # what it should be.. libvirt pool refresh figures it out, but
         # that's probably expensive
@@ -131,5 +140,5 @@ def ensure_cloud_image(conn, distro, distroversion, arch):
         )
     # TODO only here to autodetect capacity
     pool.refresh(flags=0)
-    return vol
+    return vol, raw
 

@@ -1,8 +1,20 @@
 import requests
 import re
 import csv
+import HTMLParser
 
 URL="http://ceph.com/cloudinit/"
+
+class Parser(HTMLParser.HTMLParser):
+    def __init__(self):
+        self.filenames = []
+        HTMLParser.HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            for key, val in attrs:
+                if  key == 'href' and (val.endswith('.img') or val.endswith('.raw')):
+                    self.filenames.append(val)
 
 class UbuntuHandler:
     URL = 'http://cloud-images.ubuntu.com'
@@ -24,9 +36,10 @@ class UbuntuHandler:
         '11.04': 'natty',
         '11.10': 'oneiric',
         '12.04': 'precise',
-        '12.12': 'quantal',
+        '12.10': 'quantal',
         '13.04': 'raring',
-        '13.10': 'saucy'}
+        '13.10': 'saucy',
+        '14.04': 'trusty'}
 
     RELEASE_TO_VERSION = {v:k for k, v in VERSION_TO_RELEASE.items()}
 
@@ -105,11 +118,12 @@ def get(distro, distroversion, arch):
         return handler(distroversion, arch)
     r = requests.get(URL)
     r.raise_for_status()
-    c = re.sub('.*a href="', '', r.content)
-    content = re.sub('.img">.*', '.img', c)
-    list = re.findall('.*-cloudimg-.*', content)
+    parser = Parser()
+    parser.feed(r.content)
+    parser.close()
+    list = parser.filenames
     imageprefix = distro + '-' + distroversion + '-(\d+)'
-    imagesuffix = '-cloudimg-' + arch + '.img'
+    imagesuffix = '-cloudimg-' + arch + '.(img|raw)'
     imagestring = imageprefix + imagesuffix
     file = search(imagestring=imagestring, list=list)
     if file is not False:
@@ -123,6 +137,66 @@ def get(distro, distroversion, arch):
         return returndict
     else:
         raise NameError('Image not found on server at ' + URL)
+
+def add_distro(distro, version, distro_and_versions, codename=None):
+    # Create dict entry for Distro, append if exists.
+    if codename:
+        version = '{version}({codename})'.format(version=version, codename=codename) 
+    try:
+        distro_and_versions[distro].append(version)
+    except KeyError:
+        distro_and_versions[distro] = [version]
+
+def get_distro_list():
+    ubuntu_url = 'http://cloud-images.ubuntu.com/query/released.latest.txt'
+    distro_and_versions = {}
+
+    # Non ubuntu distro's
+    r = requests.get(URL)
+    r.raise_for_status()
+
+    # Pull .img filenames from HTML:
+    parser = Parser()
+    parser.feed(r.content)
+    parser.close()
+    for entry in parser.filenames:
+
+        # Ignore Ubuntu (we dont pull those from ceph.com)
+        if not entry.startswith('ubuntu'):
+
+            #Ignore sha512 files
+            if 'sha512' not in entry:
+                if entry.endswith('.img') or entry.endswith('.raw'):
+
+                    # Pull Distro and Version values from Filenames
+                    distro = entry.split('-')[0]
+                    version = '-'.join(re.split('[0-9]{8}', entry)[0].strip('-').split('-')[1:])
+                    add_distro(distro, str(version), distro_and_versions)
+
+    # Grab Ubuntu list from Ubuntu server:
+    r = requests.get(ubuntu_url)
+    r.raise_for_status()
+
+    # Loop through latest codename list, convert to Version, add to dict.
+    for line in r.content.rstrip().split('\n'):
+        handler = UbuntuHandler()
+        codename = line.split()[0]
+        version = handler.get_version(codename)
+        add_distro('ubuntu', version, distro_and_versions, codename)
+    return distro_and_versions
+
+def make(parser):
+    """
+    Print Available Distributions and Versions.
+    """
+    parser.set_defaults(func=print_distros)
+
+def print_distros(parser):
+    distro_and_versions =get_distro_list()
+    for distro in sorted(distro_and_versions):
+        version = distro_and_versions[distro]
+        print '{distro}:   \t {version}'. format(distro=distro,version=version)
+    return
 
 def search(imagestring, list):
     for imagename in list:

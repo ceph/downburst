@@ -10,6 +10,7 @@ from . import exc
 from . import meta
 from . import template
 from . import wait
+from . import discover
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +45,12 @@ def create(args):
     else:
         distroversion = meta_data.get('downburst', {}).get('distroversion')
 
+    # If ubuntu distroversion contains non version (IE: quantal) convert to version:
+    if distroversion:
+        if distro == 'ubuntu' and ('.' not in distroversion):
+            handler = discover.UbuntuHandler()
+            distroversion = handler.get_version(distroversion)
+
     if distroversion is None:
         defaultversion = dict(
             ubuntu="12.04",
@@ -75,7 +82,7 @@ def create(args):
 
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
-    vol = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion, arch=arch)
+    vol, raw = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion, arch=arch, forcenew=args.forcenew)
 
     if args.wait:
         user_data.append("""\
@@ -96,6 +103,7 @@ exec eject /dev/cdrom
         name='{name}.img'.format(name=args.name),
         parent_vol=vol,
         capacity=capacity,
+        raw=raw,
         )
     clone = pool.createXML(etree.tostring(clonexml), flags=0)
 
@@ -182,6 +190,11 @@ def make(parser):
         '--nokey',
         action='store_true',
         help='Do not add the default ssh key (from Inktank teuthology) to authorized_hosts. Should be used for non-Inktank machines',
+        )
+    parser.add_argument(
+        '--forcenew',
+        action='store_true',
+        help='Instead if the cloud-init image already exists, force the attempt to download newest available image',
         )
     parser.add_argument(
         '--arch',
