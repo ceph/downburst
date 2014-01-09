@@ -11,7 +11,6 @@ class Parser(HTMLParser.HTMLParser):
         HTMLParser.HTMLParser.__init__(self)
 
     def handle_starttag(self, tag, attrs):
-        ret = []
         if tag == 'a':
             for key, val in attrs:
                 if  key == 'href' and (val.endswith('.img') or val.endswith('.raw')):
@@ -139,8 +138,10 @@ def get(distro, distroversion, arch):
     else:
         raise NameError('Image not found on server at ' + URL)
 
-def add_distro(distro, version, distro_and_versions):
+def add_distro(distro, version, distro_and_versions, codename=None):
     # Create dict entry for Distro, append if exists.
+    if codename:
+        version = '{version}({codename})'.format(version=version, codename=codename) 
     try:
         distro_and_versions[distro].append(version)
     except KeyError:
@@ -179,8 +180,9 @@ def get_distro_list():
     # Loop through latest codename list, convert to Version, add to dict.
     for line in r.content.rstrip().split('\n'):
         handler = UbuntuHandler()
-        version = handler.get_version(line.split()[0])
-        add_distro('ubuntu', version, distro_and_versions)
+        codename = line.split()[0]
+        version = handler.get_version(codename)
+        add_distro('ubuntu', version, distro_and_versions, codename)
     return distro_and_versions
 
 def make(parser):
