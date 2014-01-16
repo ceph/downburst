@@ -1,9 +1,13 @@
 import os.path
 import yaml
 import requests
+log = logging.getLogger(__name__)
 
 def get_ssh_pubkey():
     path = os.path.expanduser('~/.ssh/id_rsa.pub')
+    if not os.path.exists(path):
+        log.warn("Public key not found, skipping it: " + path)
+        return
     with file(path, 'rb') as f:
         return f.readline().rstrip('\n')
 
@@ -31,7 +35,8 @@ def gen_meta(
         'public-keys': [],
         }
     ssh_pubkey = get_ssh_pubkey()
-    meta_data['public-keys'].append(ssh_pubkey)
+    if ssh_pubkey is not None:
+        meta_data['public-keys'].append(ssh_pubkey)
 
     if not nokey:
         ssh_gitkey = keyfetch()
