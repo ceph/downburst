@@ -1,3 +1,4 @@
+import logging
 import os.path
 import yaml
 import requests
