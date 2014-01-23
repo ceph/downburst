@@ -7,15 +7,12 @@ def volume(
     capacity=0,
     format_=None,
     sparse=True,
-    raw = False,
     ):
     root = etree.Element('volume')
     etree.SubElement(root, 'name').text = name
     etree.SubElement(root, 'capacity').text = '{0:d}'.format(capacity)
     if sparse:
         etree.SubElement(root, 'allocation').text = '0'
-    if raw:
-        _format = 'raw'
     target = etree.SubElement(root, 'target')
     if format_ is None:
         format_ = 'qcow2'
@@ -32,14 +29,11 @@ def volume_clone(
     (_type_, parent_capacity, _allocation) = parent_vol.info()
     if capacity is None:
         capacity = parent_capacity
-    type = 'qcow2'
     sparse = False
-    if raw:
-       type = 'raw'
-       sparse = False
-    root = volume(name=name, capacity=capacity, sparse=sparse, raw=raw)
+    root = volume(name=name, capacity=capacity, sparse=sparse)
     backing = etree.SubElement(root, 'backingStore')
-    etree.SubElement(backing, 'format', type=type)
+    backing_type = 'raw' if raw else 'qcow2'
+    etree.SubElement(backing, 'format', type=backing_type)
     etree.SubElement(backing, 'path').text = parent_vol.key()
     return root
 
