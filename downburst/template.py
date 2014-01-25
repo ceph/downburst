@@ -1,6 +1,55 @@
 from lxml import etree
 import pkg_resources
 
+def parse_rbd_monitor(monitorlist):
+    monitors = dict()
+    for monitor in monitorlist.split(','):
+        port = '6789'
+        if ':' in monitor:
+            port = monitor.split(':')[1]
+            monitor = monitor.split(':')[0]
+        monitors[monitor] = port
+    return monitors
+
+def rbd_pool(
+    name,
+    pool,
+    monitorlist,
+    user,
+    secret
+    ):
+
+    root = etree.Element('pool', type='rbd')
+    etree.SubElement(root, 'name').text = name
+    rsource = etree.SubElement(root, 'source')
+    etree.SubElement(rsource,'name').text = pool
+
+    for monitor, port in parse_rbd_monitor(monitorlist).iteritems():
+        etree.SubElement(rsource, 'host', name=monitor, port=port)
+
+    if user:
+         auth = etree.SubElement(rsource, 'auth', username=user, type='ceph')
+         etree.SubElement(auth, 'secret', uuid=secret)
+    return root
+
+def rbd_volume(
+    name,
+    capacity,
+    pool,
+    ):
+    root = etree.Element('volume')
+    etree.SubElement(root, 'name').text = name
+    etree.SubElement(root, 'source')
+    etree.SubElement(root, 'capacity', unit='bytes').text = str(capacity)
+    etree.SubElement(root, 'allocation', unit='bytes').text =  str(capacity)
+    target = etree.SubElement(root, 'target')
+    etree.SubElement(target, 'path').text = 'rbd:{pool}/{name}'.format(pool=pool, name=name)
+    etree.SubElement(target, 'format', type='unknown')
+    permissions = etree.SubElement(target, 'permissions')
+    etree.SubElement(permissions, 'mode').text = '00'
+    etree.SubElement(permissions, 'owner').text = '0'
+    etree.SubElement(permissions, 'group').text = '0'
+    return root
 
 def volume(
     name,
@@ -52,6 +101,8 @@ def domain(
     cpus=None,
     networks=None,
     additional_disks_key=None,
+    rbd_disks_key=None,
+    rbd_details=None,
     hypervisor='kvm',
     raw = False
     ):
@@ -76,10 +127,9 @@ def domain(
     etree.SubElement(disk, 'driver', name='qemu', type=type)
     etree.SubElement(disk, 'source', file=disk_key)
     etree.SubElement(disk, 'target', dev='vda', bus='virtio')
-
+    letters = 'abcdefghijklmnopqrstuvwxyz'
+    x = 0
     if additional_disks_key is not None:
-        letters = 'abcdefghijklmnopqrstuvwxyz'
-        x = 0
         for key in additional_disks_key:
             x += 1
 
@@ -98,6 +148,32 @@ def domain(
             etree.SubElement(disk, 'driver', name='qemu', type='raw')
             etree.SubElement(disk, 'source', file=key)
             etree.SubElement(disk, 'target', dev=blockdevice, bus='virtio')
+    if rbd_disks_key is not None:
+        for key in rbd_disks_key:
+            x += 1
+
+            # Skip a because vda = boot drive. Drives should start
+            # at vdb and continue: vdc, vdd, etc...
+
+            blockdevice = 'vd' + letters[x]
+
+            # <disk type='file' device='disk'>
+            #   <driver name='qemu' type='raw'/>
+            #   <source file='/var/lib/libvirt/images/NAME.img'/>
+            #   <target dev='vdX' bus='virtio'/>
+            # </disk>
+
+            (devices,) = tree.xpath('/domain/devices')
+            disk = etree.SubElement(devices, 'disk', type='network')
+            etree.SubElement(disk, 'driver', name='qemu', type='raw')
+            rsource = etree.SubElement(disk, 'source', protocol='rbd', name=key)
+            for monitor, port in parse_rbd_monitor(rbd_details['ceph_cluster_monitors']).iteritems():
+                etree.SubElement(rsource, 'host', name=monitor, port=port)
+
+            etree.SubElement(disk, 'target', dev=blockdevice, bus='virtio')
+            if rbd_details['ceph_cluster_user']:
+                auth = etree.SubElement(disk, 'auth', username=rbd_details['ceph_cluster_user'])
+                etree.SubElement(auth, 'secret', type='ceph', usage=rbd_details['ceph_cluster_secret'])
 
     # <disk type='file' device='cdrom'>
     #   <driver name='qemu' type='raw'/>
