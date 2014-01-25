@@ -123,9 +123,10 @@ def ensure_cloud_image(conn, distro, distroversion, arch, forcenew=False):
         suffix=SUFFIX,
         )
     log.debug('Creating libvirt volume: %s ...', name)
+    type = 'raw' if raw else 'qcow2'
     volxml = template.volume(
         name=name,
-        raw=raw,
+        format_=type,
         # TODO we really should feed in a capacity, but we don't know
         # what it should be.. libvirt pool refresh figures it out, but
         # that's probably expensive
