@@ -80,13 +80,11 @@ def upload_volume(vol, fp, hash_function, checksum):
     stream.finish()
 
 
-def ensure_cloud_image(conn, distro, distroversion, arch, forcenew=False):
+def ensure_cloud_image(pool, distro, distroversion, arch, forcenew=False):
     """
     Ensure that the Ubuntu Cloud image is in the libvirt pool.
     Returns the volume.
     """
-    log.debug('Opening libvirt pool...')
-    pool = conn.storagePoolLookupByName('default')
 
     log.debug('Listing cloud image in libvirt...')
     name = find_cloud_image(pool=pool, distro=distro, distroversion=distroversion, arch=arch)

@@ -81,8 +81,17 @@ def create(args):
         raise exc.VMExistsError(args.name)
 
     log.debug('Opening libvirt pool...')
-    pool = conn.storagePoolLookupByName('default')
-    vol, raw = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion, arch=arch, forcenew=args.forcenew)
+
+    # Check if pool with same name of guest exists, use it if it does
+    pools = conn.listStoragePools()
+    for poolentry in pools:
+        if poolentry == args.name:
+            pool = conn.storagePoolLookupByName(poolentry)
+            break
+    if not pool:
+        pool = conn.storagePoolLookupByName('default')
+
+    vol, raw = image.ensure_cloud_image(pool=pool, distro=distro, distroversion=distroversion, arch=arch, forcenew=args.forcenew)
 
     if args.wait:
         user_data.append("""\
@@ -98,6 +107,20 @@ exec eject /dev/cdrom
     additional_disks = meta_data.get('downburst', {}).get('additional-disks')
     additional_disks_size = meta_data.get('downburst', {}).get('additional-disks-size', '10G')
     additional_disks_size = dehumanize.parse(additional_disks_size)
+    ceph_cluster_name = meta_data.get('downburst', {}).get('ceph-cluster-name')
+    ceph_cluster_monitors = meta_data.get('downburst', {}).get('ceph-cluster-monitors')
+    ceph_cluster_pool = meta_data.get('downburst', {}).get('ceph-cluster-pool')
+    ceph_cluster_user = meta_data.get('downburst', {}).get('ceph-cluster-user')
+    ceph_cluster_secret = meta_data.get('downburst', {}).get('ceph-cluster-secret')
+    rbd_disks = meta_data.get('downburst', {}).get('rbd-disks')
+    rbd_disks_size = dehumanize.parse(meta_data.get('downburst', {}).get('rbd-disks-size'))
+    rbd_details = dict()
+    rbd_details['ceph_cluster_name'] = ceph_cluster_name
+    rbd_details['ceph_cluster_monitors'] = ceph_cluster_monitors
+    rbd_details['ceph_cluster_pool'] = ceph_cluster_pool
+    rbd_details['ceph_cluster_user'] = ceph_cluster_user
+    rbd_details['ceph_cluster_secret'] = ceph_cluster_secret
+
 
     clonexml = template.volume_clone(
         name='{name}.img'.format(name=args.name),
@@ -133,6 +156,36 @@ exec eject /dev/cdrom
     if not additional_disks_key:
         additional_disks_key = None
 
+    rbd_disks_key = []
+    if rbd_disks:
+        assert ceph_cluster_name != None, "Unable to setup RBD Storage Pool. Pool name Required but is: %s" % pool
+        try:
+            rbdpool = conn.storagePoolLookupByName(ceph_cluster_name)
+        except libvirt.libvirtError:
+            poolxml = template.rbd_pool(
+                name=ceph_cluster_name,
+                monitorlist=ceph_cluster_monitors,
+                pool=ceph_cluster_pool,
+                user=ceph_cluster_user,
+                secret=ceph_cluster_secret,
+                )
+            conn.storagePoolCreateXML(etree.tostring(poolxml), 0)
+            rbdpool = conn.storagePoolLookupByName(ceph_cluster_name)
+
+        if not additional_disks:
+            additional_disks = 0
+        for rbdnum in range(1 + additional_disks, additional_disks + rbd_disks + 1):
+            rbdnum += 1
+            rbdname = '{name}-{rbdnum}'.format(name=args.name, rbdnum=rbdnum)
+            rbdxml = template.rbd_volume(
+                name=rbdname,
+                capacity=rbd_disks_size,
+                pool=ceph_cluster_pool,
+                )
+            rbd_disks_key.append(rbdpool.createXML(etree.tostring(rbdxml), flags=0).key())
+    if not rbd_disks_key:
+        rbd_disks_key = None
+
     ram = meta_data.get('downburst', {}).get('ram')
     ram = dehumanize.parse(ram)
     cpus = meta_data.get('downburst', {}).get('cpus')
@@ -145,6 +198,8 @@ exec eject /dev/cdrom
         cpus=cpus,
         networks=networks,
         additional_disks_key=additional_disks_key,
+        rbd_disks_key=rbd_disks_key,
+        rbd_details=rbd_details,
         hypervisor=args.hypervisor
         )
     dom = conn.defineXML(etree.tostring(domainxml))

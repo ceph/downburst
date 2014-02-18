@@ -24,6 +24,14 @@ def looks_like_downburst_volume(name, vol_name):
         and vol_name.endswith('.img')):
         return True
 
+    # RBD backed objects
+    if vol_name == name:
+        return True
+
+    # additional RBD backed objects
+    if re.match(name + '-(\d+)', vol_name):
+        return True
+
     return False
 
 
@@ -68,17 +76,20 @@ def destroy(args):
     # TODO to make this safe, move the images to be prefixed with
     # e.g. "downburst."
 
-    log.debug('Opening libvirt pool...')
-    pool = conn.storagePoolLookupByName('default')
+    log.debug('Getting livirt pool list...')
+    for poolentry in conn.listStoragePools():
+        log.debug('Checking Pool: {pool}'.format(pool=poolentry))
+        pool = conn.storagePoolLookupByName(poolentry)
 
-    for vol_name in pool.listVolumes():
-        if looks_like_downburst_volume(
-            name=args.name,
-            vol_name=vol_name,
-            ):
-            log.debug('Deleting volume: %r', vol_name)
-            vol = pool.storageVolLookupByName(vol_name)
-            vol.delete(flags=0)
+        for vol_name in pool.listVolumes():
+            log.debug('Checking Volumel: {volume}'.format(volume=vol_name))
+            if looks_like_downburst_volume(
+                name=args.name,
+                vol_name=vol_name,
+                ):
+                log.debug('Deleting volume: %r', vol_name)
+                vol = pool.storageVolLookupByName(vol_name)
+                vol.delete(flags=0)
 
 
 def make(parser):
