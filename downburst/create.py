@@ -83,6 +83,7 @@ def create(args):
     log.debug('Opening libvirt pool...')
 
     # Check if pool with same name of guest exists, use it if it does
+    pool = ''
     pools = conn.listStoragePools()
     for poolentry in pools:
         if poolentry == args.name:
