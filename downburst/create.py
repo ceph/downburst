@@ -81,8 +81,17 @@ def create(args):
         raise exc.VMExistsError(args.name)
 
     log.debug('Opening libvirt pool...')
-    pool = conn.storagePoolLookupByName('default')
-    vol, raw = image.ensure_cloud_image(conn=conn, distro=distro, distroversion=distroversion, arch=arch, forcenew=args.forcenew)
+
+    # Check if pool with same name of guest exists, use it if it does
+    pools = conn.listStoragePools()
+    for poolentry in pools:
+        if poolentry == args.name:
+            pool = conn.storagePoolLookupByName(poolentry)
+            break
+    if not pool:
+        pool = conn.storagePoolLookupByName('default')
+
+    vol, raw = image.ensure_cloud_image(pool=pool, distro=distro, distroversion=distroversion, arch=arch, forcenew=args.forcenew)
 
     if args.wait:
         user_data.append("""\
