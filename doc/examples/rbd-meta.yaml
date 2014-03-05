@@ -1,0 +1,13 @@
+downburst:
+  distro: "ubuntu"
+  distroversion: "12.04"
+  ceph-cluster-name: ceph
+  ceph-cluster-monitors: 127.0.0.1
+  ceph-cluster-pool: rbd
+  rbd-disks: 1
+  rbd-disks-size: 20G
+  disk-size: 40G
+  ram: 4G
+  cpus: 2
+  networks:
+    - source: front
