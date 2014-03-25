@@ -69,8 +69,7 @@ class UbuntuHandler:
                                   delimiter="\t",
                                   fieldnames=('release', 'flavour', 'stability',
                                               'serial')):
-            if row['release'] == release and row['flavour'] == 'server' \
-                                         and row['stability'] == 'release':
+            if row['release'] == release and row['flavour'] == 'server':
                 return row['serial']
         raise NameError('Image not found on server at ' + url)
 
