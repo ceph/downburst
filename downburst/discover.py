@@ -69,16 +69,34 @@ class UbuntuHandler:
                                   delimiter="\t",
                                   fieldnames=('release', 'flavour', 'stability',
                                               'serial')):
+
             if row['release'] == release and row['flavour'] == 'server':
-                return row['serial']
+                return row['serial'], row['stability']
         raise NameError('Image not found on server at ' + url)
 
-    def get_filename(self, arch, version):
-        return 'ubuntu-' + version + '-server-cloudimg-'+ arch + '-disk1.img'
+    def get_filename(self, arch, version, state):
+        if state == 'release':
+            state = ''
+        else:
+            state = '-' + state
+        return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk1.img'
         
 
-    def get_base_url(self, release, serial):
-        return self.URL + '/releases/' + release + '/release-' + serial
+    def get_base_url(self, release, serial, state):
+        stability = ''
+        added = 0
+        for letter in state:
+            if letter.isdigit() and added == 0:
+                added=1
+                stability += '-' + str(letter)
+            else:
+                stability += str(letter)
+
+        if stability == 'release':
+            location = stability + '-' + serial
+        else:
+            location = stability
+        return self.URL + '/releases/' + release + '/' + location
         
     def get_url(self, base_url, filename):
         return base_url + "/" + filename
@@ -100,9 +118,9 @@ class UbuntuHandler:
             arch = "amd64"
         release = self.get_release(distroversion)
         version = self.get_version(distroversion)
-        serial = self.get_serial(release)
-        filename = self.get_filename(arch, version)
-        base_url = self.get_base_url(release, serial)
+        serial, state = self.get_serial(release)
+        filename = self.get_filename(arch, version, state)
+        base_url = self.get_base_url(release, serial, state)
         sha256 = self.get_sha256(base_url, filename)
         url = self.get_url(base_url, filename)
         
