@@ -2,6 +2,7 @@ import requests
 import re
 import csv
 import HTMLParser
+import json
 
 URL="http://ceph.com/cloudinit/"
 
@@ -207,6 +208,16 @@ def make(parser):
     Print Available Distributions and Versions.
     """
     parser.set_defaults(func=print_distros)
+
+def make_json(parser):
+    """
+    Get json formatted distro and version information.
+    """
+    parser.set_defaults(func=print_json)
+
+def print_json(parser):
+    print json.dumps(get_distro_list())
+    return
 
 def print_distros(parser):
     distro_and_versions =get_distro_list()
