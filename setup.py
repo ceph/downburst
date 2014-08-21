@@ -48,6 +48,7 @@ setup(
             'destroy = downburst.destroy:make',
             'list = downburst.discover:make',
             'gen-ssh-key = downburst.gen_ssh_key:make',
+            'list-json = downburst.discover:make_json',
             ],
 
         },
