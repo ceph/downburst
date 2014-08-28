@@ -18,13 +18,22 @@ setup(
     version='0.0.1',
     packages=find_packages(),
 
-    author='Tommi Virtanen',
-    author_email='tommi.virtanen@inktank.com',
+    author='Inktank Storage, Inc.',
+    author_email='ceph-qa@ceph.com',
     description='Run Cloud images on libvirt virtual machines',
     long_description=read('README.rst'),
     license='MIT',
     keywords='libvirt virtualization',
     url="https://github.com/ceph/downburst",
+    classifiers=[
+        "Intended Audience :: Developers",
+        "Intended Audience :: Information Technology",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 2.7",
+    ]
+
 
     install_requires=[
         'setuptools',
