@@ -1,12 +1,12 @@
 #!/usr/bin/python
 from setuptools import setup, find_packages
 import os
+import re
 import sys
 
-def read(fname):
-    path = os.path.join(os.path.dirname(__file__), fname)
-    f = open(path)
-    return f.read()
+module_file = open("downburst/__init__.py").read()
+metadata = dict(re.findall(r"__([a-z]+)__\s*=\s*['\"]([^'\"]*)['\"]", module_file))
+long_description = open('README.rst').read()
 
 install_requires = []
 pyversion = sys.version_info[:2]
@@ -15,16 +15,24 @@ if pyversion < (2, 7) or (3, 0) <= pyversion <= (3, 1):
 
 setup(
     name='downburst',
-    version='0.0.1',
+    version=metadata['version'],
     packages=find_packages(),
-
-    author='Tommi Virtanen',
-    author_email='tommi.virtanen@inktank.com',
+    author='Inktank Storage, Inc.',
+    author_email='ceph-qa@ceph.com',
     description='Run Cloud images on libvirt virtual machines',
-    long_description=read('README.rst'),
+    long_description=long_description,
     license='MIT',
     keywords='libvirt virtualization',
     url="https://github.com/ceph/downburst",
+    classifiers=[
+        "Intended Audience :: Developers",
+        "Intended Audience :: Information Technology",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 2.7",
+    ],
+
 
     install_requires=[
         'setuptools',
