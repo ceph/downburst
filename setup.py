@@ -8,10 +8,23 @@ module_file = open("downburst/__init__.py").read()
 metadata = dict(re.findall(r"__([a-z]+)__\s*=\s*['\"]([^'\"]*)['\"]", module_file))
 long_description = open('README.rst').read()
 
-install_requires = []
+install_requires=[
+    'setuptools',
+    'libvirt-python',
+    ]
+
+install_requires.extend(
+    [ln.strip() for ln in open('requirements-dev.txt').readlines() if ln]
+)
+
 pyversion = sys.version_info[:2]
 if pyversion < (2, 7) or (3, 0) <= pyversion <= (3, 1):
     install_requires.append('argparse')
+
+tests_require = [
+    'pytest >= 2.1.3',
+    'tox >= 1.2'
+]
 
 setup(
     name='downburst',
@@ -33,17 +46,8 @@ setup(
         "Programming Language :: Python :: 2.7",
     ],
 
-
-    install_requires=[
-        'setuptools',
-        'requests',
-        'lxml',
-        'PyYaml',
-        ] + install_requires,
-
-    tests_require=[
-        'pytest >=2.1.3',
-        ],
+    install_requires=install_requires,
+    tests_require=tests_require,
 
     entry_points={
 
