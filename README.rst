@@ -41,8 +41,9 @@ hostname of the vm, and the libvirt domain name. Run::
 
 	downburst -C URI create NAME
 
-If this tool is not being used for an Inktank machine or an Inktank employee
-then you should pass the --nokey option to not install the default inktank
+If this tool is not being run on a machine on the test cluster used by
+the Red Hat Ceph development and quality assurance teams,
+then you should pass the --nokey option to not install the default
 ssh key to the created guest's authorized_hosts file.
 
         downburst -C URI create NAME --nokey
