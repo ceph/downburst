@@ -107,14 +107,7 @@ def ensure_cloud_image(pool, distro, distroversion, arch, forcenew=False):
         raw = True
     log.info('Downloading image: %s', url)
 
-    # prefetch used to default to False; 0.13.6 changed that to True, and
-    # 1.0.0 changed it to 'stream' with the opposite sense.  We really
-    # want streaming behavior no matter which version of requests; try
-    # to cope with any version.
-    if tuple(map(int, requests.__version__.split('.'))) < (1,0,0):
-        r = requests.get(url, prefetch=False)
-    else:
-        r = requests.get(url, stream=True)
+    r = requests.get(url, stream=True)
 
     # volumes have no atomic completion marker; this will forever be
     # racy!
