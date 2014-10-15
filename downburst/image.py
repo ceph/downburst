@@ -76,6 +76,7 @@ def upload_volume(vol, fp, hash_function, checksum):
 
     if h.hexdigest() != checksum:
         stream.abort()
+        vol.delete(flags=0)
         raise exc.ImageHashMismatchError()
     stream.finish()
 
