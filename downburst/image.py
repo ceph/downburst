@@ -10,6 +10,25 @@ from . import template
 
 log = logging.getLogger(__name__)
 
+def remove_image_if_corrupt(pool, name):
+    """
+    Check for Partial download (bad requests or control-c'd)
+    If file-size is unreasonable (<50 megabytes) remove the
+    template file.
+    """
+    # 50 megabytes
+    minimum = 50 * 1048576
+    vol = pool.storageVolLookupByName(name)
+    size = vol.info()[1]
+    if size < minimum:
+        log.info('Deleting Corrupt Volume: {name} as size is < {minimum}MiB ({size}MiB)'.format(
+                name=name,
+                minimum=minimum/1048576,
+                size=size/1048576))
+        vol.delete(flags=0)
+        return False
+    return True
+
 def list_cloud_images(pool, distro, distroversion, arch):
     """
     List all Cloud images in the libvirt pool.
@@ -35,6 +54,9 @@ def list_cloud_images(pool, distro, distroversion, arch):
             # no serial number in the middle
             continue
         # found one!
+        if not remove_image_if_corrupt(pool, name):
+        # delete if corrupt!
+            continue
         log.debug('Saw image: %s', name)
         yield name
 
@@ -76,6 +98,7 @@ def upload_volume(vol, fp, hash_function, checksum):
 
     if h.hexdigest() != checksum:
         stream.abort()
+        vol.delete(flags=0)
         raise exc.ImageHashMismatchError()
     stream.finish()
 
