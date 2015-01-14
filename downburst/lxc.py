@@ -71,8 +71,17 @@ def createlxc(args, meta_data, user_data, distro, distroversion, arch):
         mac = randommac()
     if not source:
         source = 'front'
+    systemd=False
 
-    configdata = '\n'.join(template.lxc(network=source, mac=mac, rootfs=guestdir)[0])
+    if distro == 'rhel' or distro == 'centos':
+        if float(distroversion) >= 7.0:
+            systemd=True
+    if distro == 'fedora':
+        if int(distroversion) >= 17:
+            systemd=True
+    if systemd:
+        log.info('This guest uses sytemd. New-ish lxc needed. Probably > 1.0 is ok. (trusty host)')
+    configdata = '\n'.join(template.lxc(guestname=guestname, network=source, mac=mac, rootfs=guestdir, systemd=systemd))
     meta_raw = meta.read_meta(meta_data)
     user_raw = '#cloud-config-archive\n' + meta.read_meta(user_data)
 

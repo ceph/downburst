@@ -3,11 +3,14 @@ import pkg_resources
 
 
 def lxc(
+    guestname,
     network,
     mac,
     rootfs,
+    systemd=False,
     ):
     config =[
+        'lxc.utsname = {guestname}'.format(guestname=guestname),
         'lxc.tty=5',
         'lxc.pts=1024',
         'lxc.network.type = veth',
@@ -15,7 +18,10 @@ def lxc(
         'lxc.network.link = br-{network}'.format(network=network),
         'lxc.network.hwaddr = {mac}'.format(mac=mac),
         'lxc.rootfs = {rootfs}'.format(rootfs=rootfs),
-        ],
+        ]
+    if systemd:
+        config.append('lxc.autodev = 1')
+        config.append('lxc.aa_profile = unconfined')
     return config
 
 def volume(
