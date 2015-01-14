@@ -25,7 +25,7 @@ def createlxc(args, meta_data, user_data, distro, distroversion, arch):
 
     #See if lxc command is on the remote server:
     try:
-        runcommand(client, 'sudo lxc-list')
+        runcommand(client, 'sudo lxc-ls')
     except Exception as e:
         raise  type(e)(e.message + '\n\nError: LXC not installed on host. Try running sudo apt-get install lxc; sudo service lxc start')
 
