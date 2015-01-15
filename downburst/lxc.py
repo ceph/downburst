@@ -122,7 +122,7 @@ def destroylxc(args):
         raise  type(e)(e.message + "\n\nError: Destroying the guest failed. It needs to be manually removed")
     print "Guest Destroyed. Older versions of lxc need the container"
     print "directory manually cleared out. To do this run:"
-    print "ssh ubuntu@" + hostname + " rm -Rvf " + lxcdir + "/" + guestname
+    print "ssh ubuntu@" + hostname + " rm -Rvf " + imagedir + "/" + guestname
 
 def runcommand(client, command):
     stdin, stdout, stderr = client.exec_command(command)
