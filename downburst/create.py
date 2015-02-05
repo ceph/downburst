@@ -1,5 +1,6 @@
 import libvirt
 import logging
+import syslog
 
 from lxml import etree
 
@@ -205,6 +206,8 @@ exec eject /dev/cdrom
         )
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
+    syslog_message = 'Created guest: {name} on {host}'.format(name=args.name, host=args.connect)
+    syslog.syslog(syslog.LOG_ERR, syslog_message)
 
     if args.wait:
         log.debug('Waiting for vm to be initialized...')

@@ -1,6 +1,7 @@
 import libvirt
 import logging
 import re
+import syslog
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +56,8 @@ def destroy(args):
         # losing unsynced data is fine here; we're going to remove the
         # disk images next
         log.debug('Terminating the virtual machine')
+        syslog_message = 'Destroyed guest: {name} on {host}'.format(name=args.name, host=args.connect)
+        syslog.syslog(syslog.LOG_ERR, syslog_message)
 
         try:
             dom.destroy()
@@ -90,6 +93,9 @@ def destroy(args):
                 log.debug('Deleting volume: %r', vol_name)
                 vol = pool.storageVolLookupByName(vol_name)
                 vol.delete(flags=0)
+                syslog_message = 'Deleted existing volume: {volume}'.format(volume=vol_name)
+                syslog.syslog(syslog.LOG_ERR, syslog_message)
+
 
 
 def make(parser):
