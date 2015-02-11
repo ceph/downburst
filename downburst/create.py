@@ -1,6 +1,7 @@
 import libvirt
 import logging
 import syslog
+import os
 
 from lxml import etree
 
@@ -206,7 +207,22 @@ exec eject /dev/cdrom
         )
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
-    syslog_message = 'Created guest: {name} on {host}'.format(name=args.name, host=args.connect)
+    try:
+        env = os.environ
+        pid = os.getpid()
+        # os.getppid() wont return the correct value:
+        ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
+        ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
+
+    except IndexError, IOError:
+        log.error('Something went wrong getting PPID/cmdlineinfo')
+        ppcmdline = 'ERROR_RETREIVING'
+
+    syslog_message = 'Created guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
+                    name=args.name,
+                    host=args.connect,
+                    username=env.get('USER'),
+                    pcmd=ppcmdline)
     syslog.syslog(syslog.LOG_ERR, syslog_message)
 
     if args.wait:
