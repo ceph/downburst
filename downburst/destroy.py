@@ -1,6 +1,8 @@
 import libvirt
 import logging
 import re
+import syslog
+import os
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +57,23 @@ def destroy(args):
         # losing unsynced data is fine here; we're going to remove the
         # disk images next
         log.debug('Terminating the virtual machine')
+        env = os.environ
+        try:
+            pid = os.getpid()
+            # os.getppid() wont return the correct value:
+            ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
+            ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
+
+        except IndexError, IOError:
+            log.exception('Something went wrong getting PPID/cmdlineinfo')
+            ppcmdline = 'ERROR_RETREIVING'
+
+        syslog_message = 'Destroyed guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
+                        name=args.name,
+                        host=args.connect,
+                        username=env.get('USER'),
+                        pcmd=ppcmdline)
+        syslog.syslog(syslog.LOG_ERR, syslog_message)
 
         try:
             dom.destroy()
@@ -90,6 +109,9 @@ def destroy(args):
                 log.debug('Deleting volume: %r', vol_name)
                 vol = pool.storageVolLookupByName(vol_name)
                 vol.delete(flags=0)
+                syslog_message = 'Deleted existing volume: {volume}'.format(volume=vol_name)
+                syslog.syslog(syslog.LOG_ERR, syslog_message)
+
 
 
 def make(parser):

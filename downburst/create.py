@@ -1,5 +1,7 @@
 import libvirt
 import logging
+import syslog
+import os
 
 from lxml import etree
 
@@ -140,7 +142,7 @@ exec eject /dev/cdrom
 
     # We want the range to be 2 - X depending on disk count.
     # Since there is already a boot volume we want the image
-    # names to be appended with -2, -3, -4, etc... for the 
+    # names to be appended with -2, -3, -4, etc... for the
     # additional disks.
     additional_disks_key = []
     if additional_disks is not None:
@@ -205,6 +207,23 @@ exec eject /dev/cdrom
         )
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
+    try:
+        env = os.environ
+        pid = os.getpid()
+        # os.getppid() wont return the correct value:
+        ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
+        ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
+
+    except IndexError, IOError:
+        log.exception('Something went wrong getting PPID/cmdlineinfo')
+        ppcmdline = 'ERROR_RETREIVING'
+
+    syslog_message = 'Created guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
+                    name=args.name,
+                    host=args.connect,
+                    username=env.get('USER'),
+                    pcmd=ppcmdline)
+    syslog.syslog(syslog.LOG_ERR, syslog_message)
 
     if args.wait:
         log.debug('Waiting for vm to be initialized...')
