@@ -142,7 +142,7 @@ exec eject /dev/cdrom
 
     # We want the range to be 2 - X depending on disk count.
     # Since there is already a boot volume we want the image
-    # names to be appended with -2, -3, -4, etc... for the 
+    # names to be appended with -2, -3, -4, etc... for the
     # additional disks.
     additional_disks_key = []
     if additional_disks is not None:
@@ -215,7 +215,7 @@ exec eject /dev/cdrom
         ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
 
     except IndexError, IOError:
-        log.error('Something went wrong getting PPID/cmdlineinfo')
+        log.exception('Something went wrong getting PPID/cmdlineinfo')
         ppcmdline = 'ERROR_RETREIVING'
 
     syslog_message = 'Created guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(

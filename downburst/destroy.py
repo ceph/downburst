@@ -65,7 +65,7 @@ def destroy(args):
             ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
 
         except IndexError, IOError:
-            log.error('Something went wrong getting PPID/cmdlineinfo')
+            log.exception('Something went wrong getting PPID/cmdlineinfo')
             ppcmdline = 'ERROR_RETREIVING'
 
         syslog_message = 'Destroyed guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
