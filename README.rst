@@ -39,14 +39,14 @@ Usage
 You need to give a unique name to your vm. This will become the
 hostname of the vm, and the libvirt domain name. Run::
 
-	downburst -C URI create NAME
+	downburst -c URI create NAME
 
 If this tool is not being run on a machine on the test cluster used by
 the Red Hat Ceph development and quality assurance teams,
 then you should pass the --nokey option to not install the default
 ssh key to the created guest's authorized_hosts file.
 
-        downburst -C URI create NAME --nokey
+        downburst -c URI create NAME --nokey
 
 The URI is the alias set in uri_aliases in ~/.config/libvirt/libvirt.conf. Example::
 
