@@ -3,8 +3,10 @@ import re
 import csv
 import HTMLParser
 import json
+import os
 
-URL="http://ceph.com/cloudinit/"
+DEFAULT_URL="http://ceph.com/cloudinit/"
+URL = os.environ.get('DOWNBURST_IMAGES_URL', DEFAULT_URL)
 
 class Parser(HTMLParser.HTMLParser):
     def __init__(self):
@@ -81,7 +83,7 @@ class UbuntuHandler:
         else:
             state = '-' + state
         return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk1.img'
-        
+
 
     def get_base_url(self, release, serial, state):
         stability = ''
@@ -98,10 +100,10 @@ class UbuntuHandler:
         else:
             location = stability
         return self.URL + '/releases/' + release + '/' + location
-        
+
     def get_url(self, base_url, filename):
         return base_url + "/" + filename
-        
+
     def get_sha256(self, base_url, filename):
         url = base_url + "/SHA256SUMS"
         r = requests.get(url)
@@ -112,7 +114,7 @@ class UbuntuHandler:
                 return row['hash']
         raise NameError('SHA-256 checksums not found for file ' + filename +
                         ' at ' + url)
-        
+
     def __call__(self, distroversion, arch):
         distroversion = distroversion.lower()
         if arch == "x86_64":
@@ -124,7 +126,7 @@ class UbuntuHandler:
         base_url = self.get_base_url(release, serial, state)
         sha256 = self.get_sha256(base_url, filename)
         url = self.get_url(base_url, filename)
-        
+
         return {'url': url, 'serial': serial, 'checksum': sha256,
                 'hash_function': 'sha256'}
 
@@ -159,7 +161,7 @@ def get(distro, distroversion, arch):
 def add_distro(distro, version, distro_and_versions, codename=None):
     # Create dict entry for Distro, append if exists.
     if codename:
-        version = '{version}({codename})'.format(version=version, codename=codename) 
+        version = '{version}({codename})'.format(version=version, codename=codename)
     try:
         distro_and_versions[distro].append(version)
     except KeyError:
