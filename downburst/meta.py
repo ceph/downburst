@@ -13,7 +13,7 @@ def get_ssh_pubkey():
         return f.readline().rstrip('\n')
 
 
-KEYURL='http://ceph.com/git/?p=keys.git;a=blob_plain;f=ssh/teuthology-ubuntu.pub;hb=HEAD'
+KEYURL='https://git.ceph.com/?p=keys.git;a=blob_plain;f=ssh/teuthology-ubuntu.pub;hb=HEAD'
 
 def keyfetch():
     print "Fetching default SSH key from "+KEYURL
