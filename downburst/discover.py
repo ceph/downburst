@@ -40,7 +40,10 @@ class UbuntuHandler:
         '12.10': 'quantal',
         '13.04': 'raring',
         '13.10': 'saucy',
-        '14.04': 'trusty'}
+        '14.04': 'trusty',
+        '14.10': 'utopic',
+        '15.04': 'vivid',
+        '15.10': 'wily'}
 
     RELEASE_TO_VERSION = {v:k for k, v in VERSION_TO_RELEASE.items()}
 
