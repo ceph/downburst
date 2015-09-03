@@ -47,6 +47,11 @@ def parse_args():
 def main():
     args = parse_args()
 
+    # turn off urllib3 connectionpool logging
+    logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(
+        logging.WARN)
+    logging.getLogger('urllib3.connectionpool').setLevel(logging.WARN)
+
     loglevel = logging.INFO
     if args.verbose:
         loglevel = logging.DEBUG
