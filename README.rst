@@ -126,3 +126,16 @@ To set it up, run this once::
 And from there on, recreate the vm (after deleting it) with::
 
 	downburst create --user-data=NAME.user.yaml NAME
+
+Adding new images
+=================
+
+Ubuntu images are fetched from Canonical themselves, so they shouldn't need any special attention.
+
+Here is the process we recently followed (on ``download.ceph.com``) for adding CentOS 7.2::
+
+	curl -O http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-1511.qcow2.xz
+	xzcat CentOS-7-x86_64-GenericCloud-1511.qcow2.xz > repos/cloudinit/centos-7.2-20151214-cloudimg-amd64.img
+	sha512sum repos/cloudinit/centos-7.2-20151214-cloudimg-amd64.img | cut -d' ' -f1 > repos/cloudinit/centos-7.2-20151214-cloudimg-amd64.img.sha512
+
+No modification to the image - beyond decompression and renaming - was necessary.
