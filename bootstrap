@@ -19,8 +19,6 @@ if command -v lsb_release >/dev/null 2>&1; then
     esac
 fi
 
-# site packages needed because libvirt python bindings are not nicely
-# packaged
-test -d virtualenv || virtualenv --system-site-packages --distribute virtualenv
-./virtualenv/bin/python setup.py develop
+test -d virtualenv || virtualenv virtualenv
 ./virtualenv/bin/pip install -r requirements-dev.txt
+./virtualenv/bin/python setup.py develop
