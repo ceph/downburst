@@ -4,7 +4,7 @@ import csv
 import HTMLParser
 import json
 
-URL="http://ceph.com/cloudinit/"
+URL="http://download.ceph.com/cloudinit/"
 
 class Parser(HTMLParser.HTMLParser):
     def __init__(self):
