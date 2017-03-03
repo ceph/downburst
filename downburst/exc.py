@@ -24,3 +24,8 @@ class ImageHashMismatchError(DownburstError):
     """
     Image SHA-512 did not match
     """
+
+class HostNotProvisioned(DownburstError):
+    """
+    --wait was specified, but the virtual machine never came up
+    """

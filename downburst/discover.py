@@ -159,7 +159,7 @@ def get(distro, distroversion, arch):
         returndict['hash_function'] = 'sha512'
         return returndict
     else:
-        raise NameError('Image not found on server at ' + URL)
+        raise NameError('Image %s not found on server at %s' % (imagestring, URL))
 
 def add_distro(distro, version, distro_and_versions, codename=None):
     # Create dict entry for Distro, append if exists.

@@ -1,8 +1,11 @@
 import json
 import libvirt_qemu
 import time
+import logging
 
 from . import exc
+
+log = logging.getLogger(__name__)
 
 
 def is_cdrom_tray_open(domain):
@@ -41,8 +44,18 @@ def is_cdrom_tray_open(domain):
 
 def wait_for_cdrom_eject(domain):
     cd_ejected = False
-    while not cd_ejected:
+    attempts = 0
+    # wait five minutes for this
+    while not cd_ejected and attempts < 50:
         cd_ejected = is_cdrom_tray_open(domain)
 
         if not cd_ejected:
-            time.sleep(1)
+            if attempts % 10 == 0:
+                log.info('waiting for cd tray open')
+            attempts += 1
+            time.sleep(6)
+
+    if not cd_ejected:
+        raise exc.HostNotProvisioned(
+            '%s never came up (cd tray open check failed)' % domain
+        )
