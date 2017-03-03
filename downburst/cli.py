@@ -19,6 +19,10 @@ def parse_args():
         help='be more verbose',
         )
     parser.add_argument(
+        '-l', '--logfile',
+        help='additional logfile (same as stderr log)',
+        )
+    parser.add_argument(
         '-c', '--connect',
         metavar='URI',
         help='libvirt URI to connect to',
@@ -59,6 +63,10 @@ def main():
     logging.basicConfig(
         level=loglevel,
         )
+
+    if args.logfile:
+        logger = logging.getLogger()
+        logger.addHandler(logging.FileHandler(filename=args.logfile))
 
     try:
         return args.func(args)
