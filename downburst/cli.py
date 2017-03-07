@@ -66,7 +66,12 @@ def main():
 
     if args.logfile:
         logger = logging.getLogger()
-        logger.addHandler(logging.FileHandler(filename=args.logfile))
+        formatter = logging.Formatter(
+            fmt=u'%(asctime)s.%(msecs)03d %(levelname)s:%(name)s:%(message)s',
+            datefmt='%Y-%m-%dT%H:%M:%S')
+        handler = logging.FileHandler(filename=args.logfile)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
     try:
         return args.func(args)
