@@ -17,6 +17,51 @@ class Parser(HTMLParser.HTMLParser):
                 if  key == 'href' and (val.endswith('.img') or val.endswith('.raw')):
                     self.filenames.append(val)
 
+
+class DebianHandler:
+    URL = 'https://cdimage.debian.org/cdimage/openstack'
+
+    def get_sha256(self, base_url, filename):
+        url = base_url + "/SHA256SUMS"
+        r = requests.get(url)
+        rows = csv.DictReader(r.content.strip().split("\n"), delimiter=" ",
+                              fieldnames=('hash', None, 'file'))
+        for row in rows:
+            if row['file'] == filename:
+                return row['hash']
+        raise NameError('SHA-256 checksums not found for file ' + filename +
+                        ' at ' + url)
+
+    def get_serial(self, base_url, filename):
+        url = base_url + '/' + filename + '.index'
+        r = requests.get(url)
+        for line in r.content.splitlines():
+            info = line.split('=')
+            if info[0] == 'revision':
+                return info[1]
+        raise NameError('Serial not found for file ' + filename + ' at ' +
+                        url)
+
+    def __call__(self, distroversion, arch):
+        distroversion = distroversion.lower()
+        if arch == "x86_64":
+            arch = "amd64"
+
+        if distroversion == 'testing':
+            base_url = self.URL + '/testing'
+        else:
+            base_url = self.URL + '/current-' + distroversion
+
+        file_name = 'debian-' + distroversion + '-openstack-' + arch + '.qcow2'
+
+        url = base_url + '/' + file_name
+        sha256 = self.get_sha256(base_url, file_name)
+        serial = self.get_serial(base_url, file_name)
+
+        return {'url': url, 'serial': serial, 'checksum': sha256,
+                'hash_function': 'sha256'}
+
+
 class UbuntuHandler:
     URL = 'http://cloud-images.ubuntu.com'
 
@@ -133,7 +178,9 @@ class UbuntuHandler:
         return {'url': url, 'serial': serial, 'checksum': sha256,
                 'hash_function': 'sha256'}
 
-HANDLERS = {'ubuntu': UbuntuHandler()}
+
+HANDLERS = {'ubuntu': UbuntuHandler(), 'debian': DebianHandler()}
+
 
 def get(distro, distroversion, arch):
     if distro in HANDLERS:
@@ -185,7 +232,7 @@ def get_distro_list():
     for entry in parser.filenames:
 
         # Ignore Ubuntu (we dont pull those from ceph.com)
-        if not entry.startswith('ubuntu'):
+        if not entry.startswith('ubuntu') and not entry.startswith('debian'):
 
             #Ignore sha512 files
             if 'sha512' not in entry:
@@ -206,6 +253,14 @@ def get_distro_list():
         codename = line.split()[0]
         version = handler.get_version(codename)
         add_distro('ubuntu', version, distro_and_versions, codename)
+
+    # Add Debian version
+    r = requests.get(DebianHandler.URL)
+    debian_version = set(re.findall('current-([\d]+)/', r.content))
+    debian_version.add('testing')
+    for v in debian_version:
+        add_distro('debian', v, distro_and_versions)
+
     return distro_and_versions
 
 def make(parser):
