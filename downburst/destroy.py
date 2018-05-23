@@ -39,55 +39,55 @@ def looks_like_downburst_volume(name, vol_name):
 
 def destroy(args):
     log.debug('Connecting to libvirt...')
-    conn = libvirt.open(args.connect)
-    if conn is None:
-        raise exc.LibvirtConnectionError()
+    #conn = libvirt.open(args.connect)
+    #if conn is None:
+    #    raise exc.LibvirtConnectionError()
 
-    try:
-        dom = conn.lookupByName(args.name)
-    except libvirt.libvirtError as e:
-        if e.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
-            # the vm does not exist, but the associated volumes might
-            # still exist
-            log.debug('No virtual machine found.')
-            pass
-        else:
-            raise
-    else:
-        # losing unsynced data is fine here; we're going to remove the
-        # disk images next
-        log.debug('Terminating the virtual machine')
-        env = os.environ
-        try:
-            pid = os.getpid()
-            # os.getppid() wont return the correct value:
-            ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
-            ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
+    #try:
+    #    dom = conn.lookupByName(args.name)
+    #except libvirt.libvirtError as e:
+    #    if e.get_error_code() == libvirt.VIR_ERR_NO_DOMAIN:
+    #        # the vm does not exist, but the associated volumes might
+    #        # still exist
+    #        log.debug('No virtual machine found.')
+    #        pass
+    #    else:
+    #        raise
+    #else:
+    #    # losing unsynced data is fine here; we're going to remove the
+    #    # disk images next
+    #    log.debug('Terminating the virtual machine')
+    #    env = os.environ
+    #    try:
+    #        pid = os.getpid()
+    #        # os.getppid() wont return the correct value:
+    #        ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
+    #        ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
 
-        except IndexError, IOError:
-            log.exception('Something went wrong getting PPID/cmdlineinfo')
-            ppcmdline = 'ERROR_RETREIVING'
+    #    except IndexError, IOError:
+    #        log.exception('Something went wrong getting PPID/cmdlineinfo')
+    #        ppcmdline = 'ERROR_RETREIVING'
 
-        syslog_message = 'Destroyed guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
-                        name=args.name,
-                        host=args.connect,
-                        username=env.get('USER'),
-                        pcmd=ppcmdline)
-        syslog.syslog(syslog.LOG_ERR, syslog_message)
+    #    syslog_message = 'Destroyed guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
+    #                    name=args.name,
+    #                    host=args.connect,
+    #                    username=env.get('USER'),
+    #                    pcmd=ppcmdline)
+    #    syslog.syslog(syslog.LOG_ERR, syslog_message)
 
-        try:
-            dom.destroy()
-        except libvirt.libvirtError as e:
-            if e.get_error_code() == libvirt.VIR_ERR_OPERATION_INVALID:
-                # it wasn't running
-                pass
-            else:
-                raise
+    #    try:
+    #        dom.destroy()
+    #    except libvirt.libvirtError as e:
+    #        if e.get_error_code() == libvirt.VIR_ERR_OPERATION_INVALID:
+    #            # it wasn't running
+    #            pass
+    #        else:
+    #            raise
 
-        dom.undefineFlags(
-             libvirt.VIR_DOMAIN_UNDEFINE_MANAGED_SAVE
-             | libvirt.VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA,
-             )
+    #    dom.undefineFlags(
+    #         libvirt.VIR_DOMAIN_UNDEFINE_MANAGED_SAVE
+    #         | libvirt.VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA,
+    #         )
 
     # we're going to remove all disks that look remotely like they
     # could be downburst vm related
@@ -95,22 +95,22 @@ def destroy(args):
     # TODO to make this safe, move the images to be prefixed with
     # e.g. "downburst."
 
-    log.debug('Getting livirt pool list...')
-    for poolentry in conn.listStoragePools():
-        log.debug('Checking Pool: {pool}'.format(pool=poolentry))
-        pool = conn.storagePoolLookupByName(poolentry)
+    #log.debug('Getting livirt pool list...')
+    #for poolentry in conn.listStoragePools():
+    #    log.debug('Checking Pool: {pool}'.format(pool=poolentry))
+    #    pool = conn.storagePoolLookupByName(poolentry)
 
-        for vol_name in pool.listVolumes():
-            log.debug('Checking Volumel: {volume}'.format(volume=vol_name))
-            if looks_like_downburst_volume(
-                name=args.name,
-                vol_name=vol_name,
-                ):
-                log.debug('Deleting volume: %r', vol_name)
-                vol = pool.storageVolLookupByName(vol_name)
-                vol.delete(flags=0)
-                syslog_message = 'Deleted existing volume: {volume}'.format(volume=vol_name)
-                syslog.syslog(syslog.LOG_ERR, syslog_message)
+    #    for vol_name in pool.listVolumes():
+    #        log.debug('Checking Volumel: {volume}'.format(volume=vol_name))
+    #        if looks_like_downburst_volume(
+    #            name=args.name,
+    #            vol_name=vol_name,
+    #            ):
+    #            log.debug('Deleting volume: %r', vol_name)
+    #            vol = pool.storageVolLookupByName(vol_name)
+    #            vol.delete(flags=0)
+    #            syslog_message = 'Deleted existing volume: {volume}'.format(volume=vol_name)
+    #            syslog.syslog(syslog.LOG_ERR, syslog_message)
 
 
 
