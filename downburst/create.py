@@ -58,7 +58,7 @@ def create(args):
             ubuntu="12.04",
             fedora="17",
             centos="6.3",
-            opensuse="12.2",
+            opensuse="15.1",
             sles="11-sp2",
             rhel="6.3",
             debian='6.0'
