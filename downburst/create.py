@@ -131,7 +131,7 @@ exec eject /dev/cdrom
         capacity=capacity,
         raw=raw,
         )
-    clone = pool.createXML(etree.tostring(clonexml), flags=0)
+    clone = pool.createXML(etree.tostring(clonexml).decode(), flags=0)
 
     iso_vol = iso.create_meta_iso(
         pool=pool,
@@ -155,7 +155,7 @@ exec eject /dev/cdrom
                 format_='raw',
                 sparse=False,
                 )
-            additional_disks_key.append(pool.createXML(etree.tostring(diskxml), flags=0).key())
+            additional_disks_key.append(pool.createXML(etree.tostring(diskxml).decode(), flags=0).key())
     if not additional_disks_key:
         additional_disks_key = None
 
@@ -205,16 +205,18 @@ exec eject /dev/cdrom
         rbd_details=rbd_details,
         hypervisor=args.hypervisor
         )
-    dom = conn.defineXML(etree.tostring(domainxml))
+    dom = conn.defineXML(etree.tostring(domainxml).decode())
     dom.create()
     try:
         env = os.environ
         pid = os.getpid()
         # os.getppid() wont return the correct value:
-        ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
-        ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
+        stat_path = '/proc/{pid}/stat'.format(pid=pid)
+        ppid = open(stat_path).read().split()[3]
+        cmdline_path = '/proc/{ppid}/cmdline'.format(ppid=ppid)
+        ppcmdline = open(cmdline_path).read().split('\x00')
 
-    except IndexError, IOError:
+    except (IndexError, IOError):
         log.exception('Something went wrong getting PPID/cmdlineinfo')
         ppcmdline = 'ERROR_RETREIVING'
 

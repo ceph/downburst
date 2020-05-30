@@ -161,7 +161,7 @@ def ensure_cloud_image(pool, distro, distroversion, arch, forcenew=False):
         # that's probably expensive
         # capacity=2*1024*1024,
         )
-    vol = pool.createXML(etree.tostring(volxml), flags=0)
+    vol = pool.createXML(etree.tostring(volxml).decode(), flags=0)
     upload_volume(
         vol=vol,
         fp=r.raw,

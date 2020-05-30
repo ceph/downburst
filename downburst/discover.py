@@ -1,15 +1,16 @@
 import requests
 import re
 import csv
-import HTMLParser
 import json
+
+from html.parser import HTMLParser
 
 URL="http://download.ceph.com/cloudinit/"
 
-class Parser(HTMLParser.HTMLParser):
+class Parser(HTMLParser):
     def __init__(self):
         self.filenames = []
-        HTMLParser.HTMLParser.__init__(self)
+        HTMLParser.__init__(self)
 
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
@@ -71,7 +72,7 @@ class UbuntuHandler:
         r = requests.get(url)
         r.raise_for_status()
         serial = None
-        for row in csv.DictReader(r.content.strip().split("\n"),
+        for row in csv.DictReader(r.content.decode().strip().split("\n"),
                                   delimiter="\t",
                                   fieldnames=('release', 'flavour', 'stability',
                                               'serial')):
@@ -110,7 +111,7 @@ class UbuntuHandler:
     def get_sha256(self, base_url, filename):
         url = base_url + "/SHA256SUMS"
         r = requests.get(url)
-        rows = csv.DictReader(r.content.strip().split("\n"), delimiter=" ",
+        rows = csv.DictReader(r.content.decode().strip().split("\n"), delimiter=" ",
                               fieldnames=('hash', 'file'))
         for row in rows:
             if row['file'] == "*" + filename:
@@ -142,7 +143,7 @@ def get(distro, distroversion, arch):
     r = requests.get(URL)
     r.raise_for_status()
     parser = Parser()
-    parser.feed(r.content)
+    parser.feed(r.content.decode())
     parser.close()
     list = parser.filenames
     imageprefix = distro + '-' + distroversion + '-(\d+)'
@@ -155,7 +156,7 @@ def get(distro, distroversion, arch):
         returndict = {}
         returndict['url'] = URL + "/" + file
         returndict['serial'] = file.split('-')[2]
-        returndict['checksum'] = sha512.content.rstrip()
+        returndict['checksum'] = sha512.content.decode().rstrip()
         returndict['hash_function'] = 'sha512'
         return returndict
     else:
@@ -180,7 +181,7 @@ def get_distro_list():
 
     # Pull .img filenames from HTML:
     parser = Parser()
-    parser.feed(r.content)
+    parser.feed(r.content.decode())
     parser.close()
     for entry in parser.filenames:
 
@@ -201,7 +202,7 @@ def get_distro_list():
     r.raise_for_status()
 
     # Loop through latest codename list, convert to Version, add to dict.
-    for line in r.content.rstrip().split('\n'):
+    for line in r.content.decode().rstrip().split('\n'):
         handler = UbuntuHandler()
         codename = line.split()[0]
         version = handler.get_version(codename)
@@ -221,14 +222,14 @@ def make_json(parser):
     parser.set_defaults(func=print_json)
 
 def print_json(parser):
-    print json.dumps(get_distro_list())
+    print(json.dumps(get_distro_list()))
     return
 
 def print_distros(parser):
     distro_and_versions =get_distro_list()
     for distro in sorted(distro_and_versions):
         version = distro_and_versions[distro]
-        print '{distro}:   \t {version}'. format(distro=distro,version=version)
+        print('{distro}:   \t {version}'. format(distro=distro,version=version))
     return
 
 def search(imagestring, list):

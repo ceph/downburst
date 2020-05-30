@@ -18,6 +18,7 @@ def generate_meta_iso(
         return tempfile.NamedTemporaryFile(
             prefix='downburst.{prefix}.'.format(prefix=prefix),
             suffix='.tmp',
+            mode='wt'
             )
     with gentemp('meta') as meta_f, gentemp('user') as user_f:
         meta.write_meta(meta_data=meta_data, fp=meta_f)
@@ -73,7 +74,7 @@ def create_meta_iso(
             capacity=length,
             format_='raw',
             )
-        vol = pool.createXML(etree.tostring(volxml), flags=0)
+        vol = pool.createXML(etree.tostring(volxml).decode(), flags=0)
         upload_volume(
             vol=vol,
             length=length,

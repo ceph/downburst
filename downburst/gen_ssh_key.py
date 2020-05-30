@@ -4,10 +4,9 @@ import shutil
 import subprocess
 import tempfile
 
-
 def read_and_delete(parent, name):
     path = os.path.join(parent, name)
-    with file(path, 'rb') as f:
+    with open(path) as f:
         data = f.read()
     os.unlink(path)
     return data
@@ -46,14 +45,14 @@ def gen_ssh_key(args):
         raise
 
     # yaml.safe_dump formats this ugly as hell, so do it manually
-    print '#cloud-config-archive'
-    print '- type: text/cloud-config'
-    print '  content: |'
-    print '    ssh_keys:'
+    print('#cloud-config-archive')
+    print('- type: text/cloud-config')
+    print('  content: |')
+    print('    ssh_keys:')
     for k, v in sorted(keys.items()):
-        print '      {0}: |'.format(k)
+        print('      {0}: |'.format(k))
         for l in v.splitlines():
-            print '        {0}'.format(l)
+            print('        {0}'.format(l))
 
 
 def make(parser):

@@ -62,9 +62,9 @@ def destroy(args):
             pid = os.getpid()
             # os.getppid() wont return the correct value:
             ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
-            ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split(b'\x00')
+            ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split('\x00')
 
-        except IndexError, IOError:
+        except (IndexError, IOError):
             log.exception('Something went wrong getting PPID/cmdlineinfo')
             ppcmdline = 'ERROR_RETREIVING'
 

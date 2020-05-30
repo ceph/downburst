@@ -9,17 +9,17 @@ def get_ssh_pubkey():
     if not os.path.exists(path):
         log.warn("Public key not found, skipping it: " + path)
         return
-    with file(path, 'rb') as f:
+    with open(path, 'rt') as f:
         return f.readline().rstrip('\n')
 
 
 KEYURL='https://git.ceph.com/?p=keys.git;a=blob_plain;f=ssh/teuthology-ubuntu.pub;hb=HEAD'
 
 def keyfetch():
-    print "Fetching default SSH key from "+KEYURL
+    print("Fetching default SSH key from " + KEYURL)
     r = requests.get(KEYURL)
     r.raise_for_status()
-    gitkey = r.content
+    gitkey = r.content.decode()
     if "ssh-" in gitkey:
         return gitkey
     else:
@@ -44,7 +44,7 @@ def gen_meta(
         meta_data['public-keys'].append(ssh_gitkey)
 
     for path in extra_meta:
-        with file(path) as f:
+        with open(path) as f:
             extra_meta_data = yaml.safe_load(f)
             if extra_meta_data is not None:
                 meta_data.update(extra_meta_data)
@@ -69,7 +69,7 @@ def gen_user(
         ]
 
     for path in extra_user:
-        with file(path) as f:
+        with open(path) as f:
             if f.readline() == '#cloud-config-archive\n':
                 # merge it into ours
                 extra_user_data = yaml.safe_load(f)
