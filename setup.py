@@ -11,6 +11,7 @@ long_description = open('README.rst').read()
 install_requires=[
     'setuptools',
     'libvirt-python',
+    'distro',
     ]
 
 install_requires.extend(
