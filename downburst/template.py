@@ -1,5 +1,12 @@
+import distro
+import logging
+
 from lxml import etree
 import pkg_resources
+
+log = logging.getLogger(__name__)
+
+emulator_path = None
 
 def parse_rbd_monitor(monitorlist):
     monitors = dict()
@@ -92,6 +99,26 @@ def volume_clone(
     etree.SubElement(backing, 'path').text = parent_vol.key()
     return root
 
+def get_emulator_path():
+    global emulator_path
+    if emulator_path:
+        return emulator_path
+    log.debug('The host distro id is %s', distro.id())
+    if any(distro.id().startswith(_)
+                for _ in ('opensuse', 'sles')):
+        path = '/usr/bin/qemu-kvm'
+    elif any(distro.id().startswith(_)
+                for _ in ('centos', 'fedora', 'rhel')):
+        path = '/usr/libexec/qemu-kvm'
+    elif any(distro.id().startswith(_)
+                for _ in ('ubuntu', 'debian')):
+        path = '/usr/bin/kvm'
+    else:
+        raise Exception("Can't get emulator path, the distro '%s' "
+                        "is not supported yet" % distro.id())
+    log.debug('Using emulator path: "%s"', path)
+    emulator_path = path
+    return emulator_path
 
 def domain(
     name,
@@ -123,6 +150,13 @@ def domain(
     if raw:
         type = 'raw'
     (devices,) = tree.xpath('/domain/devices')
+    emulator = devices.find('emulator')
+    if emulator is not None:
+        log.debug('Overriding xpath /domain/devices/emulator in xml template with: %s'
+                  % get_emulator_path())
+        emulator.text = get_emulator_path()
+    else:
+        etree.SubElement(devices, 'emulator').text = get_emulator_path()
     disk = etree.SubElement(devices, 'disk', type='file', device='disk')
     etree.SubElement(disk, 'driver', name='qemu', type=type)
     etree.SubElement(disk, 'source', file=disk_key)

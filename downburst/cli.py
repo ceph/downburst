@@ -76,8 +76,8 @@ def main():
     try:
         return args.func(args)
     except exc.DownburstError as e:
-        print >>sys.stderr, '{prog}: {msg}'.format(
+        log.error('{prog}: {msg}'.format(
             prog=args.prog,
             msg=e,
-            )
+            ))
         sys.exit(1)
