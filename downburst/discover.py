@@ -1,3 +1,4 @@
+import os
 import requests
 import re
 import csv
@@ -5,7 +6,7 @@ import json
 
 from html.parser import HTMLParser
 
-URL="http://download.ceph.com/cloudinit/"
+URL=os.environ.get("DOWNBURST_DISCOVER_URL", "http://download.ceph.com/cloudinit/")
 
 class Parser(HTMLParser):
     def __init__(self):
