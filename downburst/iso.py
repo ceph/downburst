@@ -1,3 +1,5 @@
+import distro
+import logging
 import os
 import subprocess
 import tempfile
@@ -7,6 +9,7 @@ from lxml import etree
 from . import meta
 from . import template
 
+log = logging.getLogger(__name__)
 
 def generate_meta_iso(
     name,
@@ -24,9 +27,15 @@ def generate_meta_iso(
         meta.write_meta(meta_data=meta_data, fp=meta_f)
         meta.write_user(user_data=user_data, fp=user_f)
 
+        mkisofs = 'mkisofs'
+        log.debug('The host distro id is %s', distro.id())
+        if any(distro.id().startswith(_)
+                    for _ in ('debian', 'ubuntu')):
+            mkisofs = 'genisoimage'
+        log.debug('Using "%s" to create meta iso for "%s"', mkisofs, name)
         subprocess.check_call(
             args=[
-                'genisoimage',
+                mkisofs,
                 '-quiet',
                 '-input-charset', 'utf-8',
                 '-volid', 'cidata',
