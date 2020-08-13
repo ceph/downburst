@@ -47,6 +47,8 @@ class UbuntuHandler:
         '15.04': 'vivid',
         '15.10': 'wily',
         '16.04': 'xenial',
+        '18.04': 'bionic',
+        '20.04': 'focal',
     }
 
     RELEASE_TO_VERSION = {v:k for k, v in VERSION_TO_RELEASE.items()}
@@ -87,7 +89,10 @@ class UbuntuHandler:
             state = ''
         else:
             state = '-' + state
-        return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk1.img'
+        if version == '20.04':
+            return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk-kvm.img'
+        else:
+            return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk1.img'
 
 
     def get_base_url(self, release, serial, state):
