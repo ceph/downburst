@@ -3,6 +3,7 @@ import logging
 import syslog
 import os
 
+from distro import id as distro_id
 from lxml import etree
 
 from . import dehumanize
@@ -207,24 +208,27 @@ exec eject /dev/cdrom
         )
     dom = conn.defineXML(etree.tostring(domainxml).decode())
     dom.create()
-    try:
-        env = os.environ
-        pid = os.getpid()
-        # os.getppid() wont return the correct value:
-        stat_path = '/proc/{pid}/stat'.format(pid=pid)
-        ppid = open(stat_path).read().split()[3]
-        cmdline_path = '/proc/{ppid}/cmdline'.format(ppid=ppid)
-        ppcmdline = open(cmdline_path).read().split('\x00')
+    if distro_id() == 'darwin':
+        syslog_message = f'Created guest: {args.name} on {args.connect}'
+    else:
+        try:
+            env = os.environ
+            pid = os.getpid()
+            # os.getppid() wont return the correct value:
+            stat_path = '/proc/{pid}/stat'.format(pid=pid)
+            ppid = open(stat_path).read().split()[3]
+            cmdline_path = '/proc/{ppid}/cmdline'.format(ppid=ppid)
+            ppcmdline = open(cmdline_path).read().split('\x00')
 
-    except (IndexError, IOError):
-        log.exception('Something went wrong getting PPID/cmdlineinfo')
-        ppcmdline = 'ERROR_RETREIVING'
+        except (IndexError, IOError):
+            log.exception('Something went wrong getting PPID/cmdlineinfo')
+            ppcmdline = 'ERROR_RETREIVING'
 
-    syslog_message = 'Created guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
-                    name=args.name,
-                    host=args.connect,
-                    username=env.get('USER'),
-                    pcmd=ppcmdline)
+        syslog_message = 'Created guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
+                        name=args.name,
+                        host=args.connect,
+                        username=env.get('USER'),
+                        pcmd=ppcmdline)
     syslog.syslog(syslog.LOG_ERR, syslog_message)
 
     if args.wait:
