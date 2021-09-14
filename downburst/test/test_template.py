@@ -6,6 +6,7 @@ def test_domain_name():
         name='fakename',
         disk_key='/fake/path',
         iso_key='/fake/iso',
+        emulator='/fake/emulator/path',
         )
     name = tree.xpath('/domain/name/text()')
     name = ''.join(name)
@@ -17,6 +18,7 @@ def test_domain_disk():
         name='fakename',
         disk_key='/fake/path',
         iso_key='/fake/iso',
+        emulator='/fake/emulator/path',
         )
     got = tree.xpath(
         '/domain/devices/disk[@device="disk"]/source/@file',
@@ -29,6 +31,7 @@ def test_domain_iso():
         name='fakename',
         disk_key='/fake/path',
         iso_key='/fake/iso',
+        emulator='/fake/emulator/path',
         )
     got = tree.xpath(
         '/domain/devices/disk[@device="cdrom"]/source/@file',
@@ -41,6 +44,7 @@ def test_domain_network_default():
         name='fakename',
         disk_key='/fake/path',
         iso_key='/fake/iso',
+        emulator='/fake/emulator/path',
         )
     got = tree.xpath(
         '/domain/devices/interface[@type="network"]/source/@network',
@@ -57,6 +61,7 @@ def test_domain_network_custom():
             dict(source='one'),
             dict(source='two'),
             ],
+        emulator='/fake/emulator/path',
         )
     got = tree.xpath(
         '/domain/devices/interface[@type="network"]/source/@network',
@@ -72,6 +77,7 @@ def test_domain_network_mac():
         networks=[
             dict(mac='12:34:56:78:90:ab'),
             ],
+        emulator='/fake/emulator/path',
         )
     got = tree.xpath(
         '/domain/devices/interface[@type="network"]/mac/@address',

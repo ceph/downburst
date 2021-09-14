@@ -14,9 +14,14 @@ from . import meta
 from . import template
 from . import wait
 from . import discover
+from . import util
 
 log = logging.getLogger(__name__)
 
+
+def lookup_emulator_path(conn, arch):
+    text = conn.getCapabilities()
+    return util.lookup_emulator(text, arch)
 
 def create(args):
     log.debug('Connecting to libvirt...')
@@ -77,6 +82,9 @@ def create(args):
     if arch is None:
         arch = "amd64"
 
+    emulator_path = lookup_emulator_path(conn, arch)
+    if emulator_path:
+        log.debug(f'Determined emulator path: {emulator_path}')
     # check if the vm exists already, complain if so. this would
     # normally use conn.lookupByName, but that logs on all errors;
     # avoid the noise.
@@ -204,7 +212,8 @@ exec eject /dev/cdrom
         additional_disks_key=additional_disks_key,
         rbd_disks_key=rbd_disks_key,
         rbd_details=rbd_details,
-        hypervisor=args.hypervisor
+        hypervisor=args.hypervisor,
+        emulator=emulator_path,
         )
     dom = conn.defineXML(etree.tostring(domainxml).decode())
     dom.create()
