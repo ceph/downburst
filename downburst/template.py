@@ -131,7 +131,8 @@ def domain(
     rbd_disks_key=None,
     rbd_details=None,
     hypervisor='kvm',
-    raw = False
+    raw = False,
+    emulator = None,
     ):
     with pkg_resources.resource_stream('downburst', 'template.xml') as f:
         tree = etree.parse(f)
@@ -150,13 +151,14 @@ def domain(
     if raw:
         type = 'raw'
     (devices,) = tree.xpath('/domain/devices')
-    emulator = devices.find('emulator')
-    if emulator is not None:
+    emulator_element = devices.find('emulator')
+    emulator_path = emulator or get_emulator_path()
+    if emulator_element is not None:
         log.debug('Overriding xpath /domain/devices/emulator in xml template with: %s'
-                  % get_emulator_path())
-        emulator.text = get_emulator_path()
+                  % emulator_path)
+        emulator_element.text = emulator_path
     else:
-        etree.SubElement(devices, 'emulator').text = get_emulator_path()
+        etree.SubElement(devices, 'emulator').text = emulator_path
     disk = etree.SubElement(devices, 'disk', type='file', device='disk')
     etree.SubElement(disk, 'driver', name='qemu', type=type)
     etree.SubElement(disk, 'source', file=disk_key)

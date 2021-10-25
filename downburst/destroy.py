@@ -4,6 +4,8 @@ import re
 import syslog
 import os
 
+from distro import id as distro_id
+
 log = logging.getLogger(__name__)
 
 
@@ -57,22 +59,25 @@ def destroy(args):
         # losing unsynced data is fine here; we're going to remove the
         # disk images next
         log.debug('Terminating the virtual machine')
-        env = os.environ
-        try:
-            pid = os.getpid()
-            # os.getppid() wont return the correct value:
-            ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
-            ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split('\x00')
+        if distro_id() == 'darwin':
+            syslog_message = f'Destroyed guest: {args.name} on {args.connect}'
+        else:
+            env = os.environ
+            try:
+                pid = os.getpid()
+                # os.getppid() wont return the correct value:
+                ppid = open('/proc/{pid}/stat'.format(pid=pid)).read().split()[3]
+                ppcmdline = open('/proc/{ppid}/cmdline'.format(ppid=ppid)).read().split('\x00')
 
-        except (IndexError, IOError):
-            log.exception('Something went wrong getting PPID/cmdlineinfo')
-            ppcmdline = 'ERROR_RETREIVING'
+            except (IndexError, IOError):
+                log.exception('Something went wrong getting PPID/cmdlineinfo')
+                ppcmdline = 'ERROR_RETREIVING'
 
-        syslog_message = 'Destroyed guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
-                        name=args.name,
-                        host=args.connect,
-                        username=env.get('USER'),
-                        pcmd=ppcmdline)
+            syslog_message = 'Destroyed guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
+                            name=args.name,
+                            host=args.connect,
+                            username=env.get('USER'),
+                            pcmd=ppcmdline)
         syslog.syslog(syslog.LOG_ERR, syslog_message)
 
         try:

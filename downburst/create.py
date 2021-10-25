@@ -3,6 +3,7 @@ import logging
 import syslog
 import os
 
+from distro import id as distro_id
 from lxml import etree
 
 from . import dehumanize
@@ -13,9 +14,14 @@ from . import meta
 from . import template
 from . import wait
 from . import discover
+from . import util
 
 log = logging.getLogger(__name__)
 
+
+def lookup_emulator_path(conn, arch):
+    text = conn.getCapabilities()
+    return util.lookup_emulator(text, arch)
 
 def create(args):
     log.debug('Connecting to libvirt...')
@@ -76,6 +82,9 @@ def create(args):
     if arch is None:
         arch = "amd64"
 
+    emulator_path = lookup_emulator_path(conn, arch)
+    if emulator_path:
+        log.debug(f'Determined emulator path: {emulator_path}')
     # check if the vm exists already, complain if so. this would
     # normally use conn.lookupByName, but that logs on all errors;
     # avoid the noise.
@@ -203,28 +212,32 @@ exec eject /dev/cdrom
         additional_disks_key=additional_disks_key,
         rbd_disks_key=rbd_disks_key,
         rbd_details=rbd_details,
-        hypervisor=args.hypervisor
+        hypervisor=args.hypervisor,
+        emulator=emulator_path,
         )
     dom = conn.defineXML(etree.tostring(domainxml).decode())
     dom.create()
-    try:
-        env = os.environ
-        pid = os.getpid()
-        # os.getppid() wont return the correct value:
-        stat_path = '/proc/{pid}/stat'.format(pid=pid)
-        ppid = open(stat_path).read().split()[3]
-        cmdline_path = '/proc/{ppid}/cmdline'.format(ppid=ppid)
-        ppcmdline = open(cmdline_path).read().split('\x00')
+    if distro_id() == 'darwin':
+        syslog_message = f'Created guest: {args.name} on {args.connect}'
+    else:
+        try:
+            env = os.environ
+            pid = os.getpid()
+            # os.getppid() wont return the correct value:
+            stat_path = '/proc/{pid}/stat'.format(pid=pid)
+            ppid = open(stat_path).read().split()[3]
+            cmdline_path = '/proc/{ppid}/cmdline'.format(ppid=ppid)
+            ppcmdline = open(cmdline_path).read().split('\x00')
 
-    except (IndexError, IOError):
-        log.exception('Something went wrong getting PPID/cmdlineinfo')
-        ppcmdline = 'ERROR_RETREIVING'
+        except (IndexError, IOError):
+            log.exception('Something went wrong getting PPID/cmdlineinfo')
+            ppcmdline = 'ERROR_RETREIVING'
 
-    syslog_message = 'Created guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
-                    name=args.name,
-                    host=args.connect,
-                    username=env.get('USER'),
-                    pcmd=ppcmdline)
+        syslog_message = 'Created guest: {name} on {host} by User: {username} PPCMD: {pcmd}'.format(
+                        name=args.name,
+                        host=args.connect,
+                        username=env.get('USER'),
+                        pcmd=ppcmdline)
     syslog.syslog(syslog.LOG_ERR, syslog_message)
 
     if args.wait:
