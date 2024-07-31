@@ -2,7 +2,7 @@ import distro
 import logging
 
 from lxml import etree
-import pkg_resources
+import importlib
 
 log = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ def domain(
     raw = False,
     emulator = None,
     ):
-    with pkg_resources.resource_stream('downburst', 'template.xml') as f:
+    with importlib.resources.files('downburst').joinpath('template.xml').open() as f:
         tree = etree.parse(f)
     (domain,) = tree.xpath('/domain')
     domain.set('type', hypervisor)
