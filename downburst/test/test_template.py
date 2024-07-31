@@ -13,6 +13,17 @@ def test_domain_name():
     assert name == 'fakename'
 
 
+def test_domain_arch():
+    tree = template.domain(
+        name='fakename',
+        disk_key='/fake/path',
+        iso_key='/fake/iso',
+        emulator='/fake/emulator/path',
+        )
+    arch = tree.xpath('/domain/os/type/@arch')
+    assert arch == ['x86_64']
+
+
 def test_domain_disk():
     tree = template.domain(
         name='fakename',
