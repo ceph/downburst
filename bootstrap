@@ -19,6 +19,6 @@ if command -v lsb_release >/dev/null 2>&1; then
     esac
 fi
 
-test -d virtualenv || virtualenv -p python3 virtualenv
+test -d virtualenv || python3 -m venv virtualenv
 ./virtualenv/bin/pip install -r requirements-dev.txt
-./virtualenv/bin/python setup.py develop
+./virtualenv/bin/pip install -e .
