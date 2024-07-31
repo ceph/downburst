@@ -152,7 +152,7 @@ def get(distro, distroversion, arch):
     parser.feed(r.content.decode())
     parser.close()
     list = parser.filenames
-    imageprefix = distro + '-' + distroversion + '-(\d+)'
+    imageprefix = distro + '-' + distroversion + r'-(\d+)'
     imagesuffix = '-cloudimg-' + arch + '.(img|raw)'
     imagestring = imageprefix + imagesuffix
     file = search(imagestring=imagestring, list=list)
