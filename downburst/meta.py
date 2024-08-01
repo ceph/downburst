@@ -5,12 +5,12 @@ import requests
 log = logging.getLogger(__name__)
 
 def get_ssh_pubkey():
-    path = os.path.expanduser('~/.ssh/id_rsa.pub')
-    if not os.path.exists(path):
+    for p in ('~/.ssh/id_rsa.pub', '~/.ssh/id_ed25519.pub'):
+        path = os.path.expanduser(p)
+        if os.path.exists(path):
+            with open(path, 'rt') as f:
+                return f.readline().rstrip('\n')
         log.warn("Public key not found, skipping it: " + path)
-        return
-    with open(path, 'rt') as f:
-        return f.readline().rstrip('\n')
 
 
 KEYURL='https://git.ceph.com/?p=keys.git;a=blob_plain;f=ssh/teuthology-ubuntu.pub;hb=HEAD'
