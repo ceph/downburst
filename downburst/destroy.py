@@ -15,7 +15,7 @@ def looks_like_downburst_volume(name, vol_name):
         return True
 
     # additional disks for the vm
-    if re.match(name + '-(\d+).img', vol_name):
+    if re.match(name + r'-(\d+).img', vol_name):
         return True
 
     # cloud-init.{name}.iso: cloud-init meta-data CD-ROM
@@ -33,7 +33,7 @@ def looks_like_downburst_volume(name, vol_name):
         return True
 
     # additional RBD backed objects
-    if re.match(name + '-(\d+)', vol_name):
+    if re.match(name + r'-(\d+)', vol_name):
         return True
 
     return False
@@ -106,7 +106,7 @@ def destroy(args):
         pool = conn.storagePoolLookupByName(poolentry)
 
         for vol_name in pool.listVolumes():
-            log.debug('Checking Volumel: {volume}'.format(volume=vol_name))
+            log.debug('Checking Volume: {volume}'.format(volume=vol_name))
             if looks_like_downburst_volume(
                 name=args.name,
                 vol_name=vol_name,
