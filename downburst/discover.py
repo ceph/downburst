@@ -1,10 +1,13 @@
-import os
-import requests
-import re
 import csv
 import json
+import logging
+import os
+import re
+import requests
 
 from html.parser import HTMLParser
+
+log = logging.getLogger(__name__)
 
 URL=os.environ.get("DOWNBURST_DISCOVER_URL", "http://download.ceph.com/cloudinit/")
 
@@ -18,6 +21,17 @@ class Parser(HTMLParser):
             for key, val in attrs:
                 if  key == 'href' and (val.endswith('.img') or val.endswith('.raw')):
                     self.filenames.append(val)
+
+class ReleaseParser(HTMLParser):
+    def __init__(self):
+        self.dirs = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            for key, val in attrs:
+                if  key == 'href' and val.startswith('release-'):
+                    self.dirs.append(val.rstrip('/'))
 
 class UbuntuHandler:
     URL = 'http://cloud-images.ubuntu.com'
@@ -49,6 +63,8 @@ class UbuntuHandler:
         '16.04': 'xenial',
         '18.04': 'bionic',
         '20.04': 'focal',
+        '22.04': 'jammy',
+        '24.04': 'noble',
     }
 
     RELEASE_TO_VERSION = {v:k for k, v in VERSION_TO_RELEASE.items()}
@@ -70,18 +86,18 @@ class UbuntuHandler:
             pass
         return distroversion
 
-    def get_serial(self, release):
-        url = self.URL + '/query/released.latest.txt'
+    def get_latest_release_serial(self, release):
+        url = self.URL + f"/releases/{release}"
         r = requests.get(url)
         r.raise_for_status()
-        serial = None
-        for row in csv.DictReader(r.content.decode().strip().split("\n"),
-                                  delimiter="\t",
-                                  fieldnames=('release', 'flavour', 'stability',
-                                              'serial')):
+        parser = ReleaseParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        latest_release_directory = sorted(parser.dirs)[-1]
+        if latest_release_directory:
+            serial = latest_release_directory.split('-')[1]
+            return serial, 'release'
 
-            if row['release'] == release and row['flavour'] == 'server':
-                return row['serial'], row['stability']
         raise NameError('Image not found on server at ' + url)
 
     def get_filename(self, arch, version, state):
@@ -89,7 +105,10 @@ class UbuntuHandler:
             state = ''
         else:
             state = '-' + state
-        if version == '20.04':
+        major, minor = version.split('.')
+        if int(major) >= 23 and int(minor) >= 10:
+            return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '.img'
+        elif int(major) >= 20:
             return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk-kvm.img'
         else:
             return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk1.img'
@@ -130,8 +149,9 @@ class UbuntuHandler:
         if arch == "x86_64":
             arch = "amd64"
         release = self.get_release(distroversion)
+        log.debug(f"Found release: {release}")
         version = self.get_version(distroversion)
-        serial, state = self.get_serial(release)
+        serial, state = self.get_latest_release_serial(release)
         filename = self.get_filename(arch, version, state)
         base_url = self.get_base_url(release, serial, state)
         sha256 = self.get_sha256(base_url, filename)
