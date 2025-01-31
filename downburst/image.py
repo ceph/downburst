@@ -76,9 +76,12 @@ def find_cloud_image(pool, distro, distroversion, arch):
         log.debug('No cloud images found.')
         return None
 
+    log.debug(names)
     # the build serial is zero-padded, hence alphabetically sortable;
     # max is the latest image
-    return max(names)
+    latest=max(names)
+    log.debug(f"Found latest image {latest}")
+    return latest
 
 
 def upload_volume(vol, fp, hash_function, checksum):
