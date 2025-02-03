@@ -22,6 +22,18 @@ class Parser(HTMLParser):
                 if  key == 'href' and (val.endswith('.img') or val.endswith('.raw')):
                     self.filenames.append(val)
 
+class RockyImageParser(HTMLParser):
+    def __init__(self):
+        self.urls = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            for key, val in attrs:
+                if  key == 'href' and val.endswith('.qcow2') and 'GenericCloud' in val:
+                    self.urls.append(val)
+
+
 class ReleaseParser(HTMLParser):
     def __init__(self):
         self.dirs = []
@@ -47,7 +59,26 @@ class UbuntuVersionParser(HTMLParser):
                     if res:
                         self.versions.append(val.rstrip('/'))
 
-class UbuntuHandler:
+class RockyVersionParser(HTMLParser):
+    def __init__(self):
+        self.versions = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            r = re.compile(r'^([0-9]+\.[0-9]+)/')
+            for key, val in attrs:
+                if key == 'href':
+                    res = r.search(val)
+                    if res:
+                        self.versions.append(val.rstrip('/'))
+
+class DistroHandler:
+    def get_releases(self) -> dict[str, str]:
+        log.error(f"Method 'get_releases' is undefined for class {self.__class__.__name__}")
+        return {}
+
+class UbuntuHandler(DistroHandler):
     URL = 'http://cloud-images.ubuntu.com'
 
     VERSION_TO_RELEASE = {
@@ -122,7 +153,7 @@ class UbuntuHandler:
 
         raise NameError('Image not found on server at ' + url)
 
-    def get_releases(self):
+    def get_releases(self) -> dict[str, str]:
         """
         Returns dict version
         """
@@ -187,6 +218,7 @@ class UbuntuHandler:
         raise NameError('SHA-256 checksums not found for file ' + filename +
                         ' at ' + url)
 
+
     def __call__(self, distroversion, arch):
         distroversion = distroversion.lower()
         if arch == "x86_64":
@@ -203,7 +235,68 @@ class UbuntuHandler:
         return {'url': url, 'serial': serial, 'checksum': sha256,
                 'hash_function': 'sha256'}
 
-HANDLERS = {'ubuntu': UbuntuHandler()}
+
+class RockyHandler(DistroHandler):
+    URL="https://dl.rockylinux.org"
+
+    def get_releases(self) -> dict[str, str]:
+        url = f"{self.URL}/pub/rocky/"
+        log.debug(f"Lookup for Rockfy releases by url {url}")
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = RockyVersionParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        log.debug(f"Rocky versions: {parser.versions}")
+        return {v:None for v in parser.versions}
+
+    def get_sha256(self, base_url, filename):
+        url = base_url + "/CHECKSUM"
+        r = requests.get(url)
+        parser = re.compile(r"SHA256 \((.*)\) = ([a-f0-9]+)")
+        for line in r.content.decode().strip().split("\n"):
+            found = parser.search(line)
+            if found:
+                if found.group(1) == filename:
+                    return found.group(2)
+        raise NameError('SHA-256 checksums not found for file ' + filename +
+                        ' at ' + url)
+
+    def get_latest_release_image(self, url):
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = RockyImageParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        r = re.compile(r"GenericCloud-Base-[0-9]+\.[0-9]+-([0-9]+\.[0-9]+)\.")
+        for href in parser.urls:
+            res = r.search(href)
+            if res:
+                serial=res.group(1)
+                return href, serial
+
+        raise NameError('Image not found on server at ' + url)
+
+    def __call__(self, release, arch):
+        if arch == "amd64":
+            arch = "x86_64"
+        base_url = self.URL + f"/pub/rocky/{release}/images/{arch}"
+        filename, serial = self.get_latest_release_image(base_url)
+        log.debug(f"Found image for release '{release}': {filename} ({serial})")
+        sha256 = self.get_sha256(base_url, filename)
+        url = base_url + '/' + filename
+        return {
+            'url': url,
+            'serial': serial.rstrip('.0'),
+            'checksum': sha256,
+            'hash_function': 'sha256'
+        }
+
+
+HANDLERS = {
+        'ubuntu': UbuntuHandler(),
+        'rocky': RockyHandler(),
+    }
 
 def get(distro, distroversion, arch):
     if distro in HANDLERS:
@@ -266,9 +359,9 @@ def get_distro_list():
                     add_distro(distro, str(version), distro_and_versions)
 
     for distro, handler in HANDLERS.items():
-        handler = UbuntuHandler()
         for version, codename in handler.get_releases().items():
             add_distro(distro, version, distro_and_versions, codename)
+
     return distro_and_versions
 
 def make(parser):
