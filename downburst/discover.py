@@ -33,6 +33,20 @@ class ReleaseParser(HTMLParser):
                 if  key == 'href' and val.startswith('release-'):
                     self.dirs.append(val.rstrip('/'))
 
+class UbuntuVersionParser(HTMLParser):
+    def __init__(self):
+        self.versions = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            r = re.compile(r'^([0-9]+\.[0-9]+(?:\.[0-9]+)?)/')
+            for key, val in attrs:
+                if  key == 'href':
+                    res = r.search(val)
+                    if res:
+                        self.versions.append(val.rstrip('/'))
+
 class UbuntuHandler:
     URL = 'http://cloud-images.ubuntu.com'
 
@@ -63,11 +77,19 @@ class UbuntuHandler:
         '16.04': 'xenial',
         '18.04': 'bionic',
         '20.04': 'focal',
+        '20.10': 'groovy',
+        '21.04': 'hirsute',
+        '21.10': 'impish',
         '22.04': 'jammy',
+        '22.10': 'kinetic',
+        '23.04': 'lunar',
+        '23.10': 'mantic',
         '24.04': 'noble',
+        '24.10': 'oracular',
     }
 
     RELEASE_TO_VERSION = {v:k for k, v in VERSION_TO_RELEASE.items()}
+
 
     def get_release(self, distroversion):
         try:
@@ -100,18 +122,39 @@ class UbuntuHandler:
 
         raise NameError('Image not found on server at ' + url)
 
+    def get_releases(self):
+        """
+        Returns dict version
+        """
+        url = f"{self.URL}/releases/"
+        log.debug(f"Lookup for Ubuntu release by: {url}")
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = UbuntuVersionParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        version_release = {}
+        for ver in parser.versions:
+            v = ver.split(".")
+            if len(v) > 1:
+                major_minor = f"{v[0]}.{v[1]}"
+                release = self.VERSION_TO_RELEASE.get(major_minor)
+                if release:
+                    version_release[ver] = release
+        return version_release
+
     def get_filename(self, arch, version, state):
         if state == 'release':
             state = ''
         else:
             state = '-' + state
-        major, minor = version.split('.')
+        major, minor = version.split('.')[0:2]
         if int(major) >= 23 and int(minor) >= 10:
-            return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '.img'
+            return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '.img'
         elif int(major) >= 20:
-            return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk-kvm.img'
+            return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '-disk-kvm.img'
         else:
-            return 'ubuntu-' + version + state + '-server-cloudimg-'+ arch + '-disk1.img'
+            return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '-disk1.img'
 
 
     def get_base_url(self, release, serial, state):
@@ -198,10 +241,10 @@ def add_distro(distro, version, distro_and_versions, codename=None):
         distro_and_versions[distro] = [version]
 
 def get_distro_list():
-    ubuntu_url = 'http://cloud-images.ubuntu.com/query/released.latest.txt'
     distro_and_versions = {}
 
     # Non ubuntu distro's
+    log.debug(f"Lookup images at {URL}")
     r = requests.get(URL)
     r.raise_for_status()
 
@@ -210,29 +253,22 @@ def get_distro_list():
     parser.feed(r.content.decode())
     parser.close()
     for entry in parser.filenames:
-
+        distro,_ = entry.split('-', 1)
         # Ignore Ubuntu (we dont pull those from ceph.com)
-        if not entry.startswith('ubuntu'):
+        if not distro in HANDLERS.keys():
 
             #Ignore sha512 files
             if 'sha512' not in entry:
                 if entry.endswith('.img') or entry.endswith('.raw'):
 
                     # Pull Distro and Version values from Filenames
-                    distro = entry.split('-')[0]
                     version = '-'.join(re.split('[0-9]{8}', entry)[0].strip('-').split('-')[1:])
                     add_distro(distro, str(version), distro_and_versions)
 
-    # Grab Ubuntu list from Ubuntu server:
-    r = requests.get(ubuntu_url)
-    r.raise_for_status()
-
-    # Loop through latest codename list, convert to Version, add to dict.
-    for line in r.content.decode().rstrip().split('\n'):
+    for distro, handler in HANDLERS.items():
         handler = UbuntuHandler()
-        codename = line.split()[0]
-        version = handler.get_version(codename)
-        add_distro('ubuntu', version, distro_and_versions, codename)
+        for version, codename in handler.get_releases().items():
+            add_distro(distro, version, distro_and_versions, codename)
     return distro_and_versions
 
 def make(parser):
