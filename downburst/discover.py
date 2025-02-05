@@ -260,6 +260,61 @@ class UbuntuHandler(DistroHandler):
         return {'url': url, 'serial': serial, 'checksum': sha256,
                 'hash_function': 'sha256'}
 
+class AlmaHandler(DistroHandler):
+    URL="https://repo.almalinux.org"
+
+    def get_releases(self) -> dict[str, str]:
+        url = f"{self.URL}/almalinux/"
+        log.debug(f"Lookup for AlmaLinux releases by url {url}")
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = RockyVersionParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        log.debug(f"Alma versions: {parser.versions}")
+        return {v:None for v in parser.versions}
+
+    def get_sha256(self, base_url, filename):
+        url = base_url + "/CHECKSUM"
+        r = requests.get(url)
+        parser = re.compile(r"([a-f0-9]+)\s+(.*\.qcow2)$")
+        for line in r.content.decode().strip().split("\n"):
+            found = parser.search(line)
+            if found:
+                if found.group(2) == filename:
+                    return found.group(1)
+        raise NameError('SHA-256 checksums not found for file ' + filename +
+                        ' at ' + url)
+
+    def get_latest_release_image(self, url):
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = RockyImageParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        r = re.compile(r"GenericCloud-[0-9]+\.[0-9]+-([0-9]+)\.")
+        for href in parser.urls:
+            res = r.search(href)
+            if res:
+                serial=res.group(1)
+                return href, serial
+
+        raise NameError('Image not found on server at ' + url)
+
+    def __call__(self, release, arch):
+        if arch == "amd64":
+            arch = "x86_64"
+        base_url = self.URL + f"/almalinux/{release}/cloud/{arch}/images/"
+        filename, serial = self.get_latest_release_image(base_url)
+        log.debug(f"Found image for release '{release}': {filename} ({serial})")
+        sha256 = self.get_sha256(base_url, filename)
+        url = base_url + '/' + filename
+        return {
+            'url': url,
+            'serial': serial.rstrip('.0'),
+            'checksum': sha256,
+            'hash_function': 'sha256'
+        }
 
 class RockyHandler(DistroHandler):
     URL="https://dl.rockylinux.org"
@@ -394,6 +449,7 @@ class OpenSUSEHandler(DistroHandler):
 HANDLERS = {
         'ubuntu': UbuntuHandler(),
         'opensuse': OpenSUSEHandler(),
+        'alma': AlmaHandler(),
         'rocky': RockyHandler(),
     }
 
