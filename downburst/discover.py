@@ -33,6 +33,17 @@ class RockyImageParser(HTMLParser):
                 if  key == 'href' and val.endswith('.qcow2') and 'GenericCloud' in val:
                     self.urls.append(val)
 
+class OpenSUSEImageParser(HTMLParser):
+    def __init__(self):
+        self.urls = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            for key, val in attrs:
+                if  key == 'href' and val.endswith('.qcow2') and 'Cloud' in val:
+                    self.urls.append(val)
+
 
 class ReleaseParser(HTMLParser):
     def __init__(self):
@@ -72,6 +83,20 @@ class RockyVersionParser(HTMLParser):
                     res = r.search(val)
                     if res:
                         self.versions.append(val.rstrip('/'))
+
+class OpenSUSEVersionParser(HTMLParser):
+    def __init__(self):
+        self.versions = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            r = re.compile(r'^\./([0-9]{2}\.[0-9])/')
+            for key, val in attrs:
+                if key == 'href':
+                    res = r.search(val)
+                    if res:
+                        self.versions.append(res.group(1))
 
 class DistroHandler:
     def get_releases(self) -> dict[str, str]:
@@ -292,9 +317,83 @@ class RockyHandler(DistroHandler):
             'hash_function': 'sha256'
         }
 
+class OpenSUSEHandler(DistroHandler):
+    URL="https://download.opensuse.org"
+
+    def get_releases(self) -> dict[str, str]:
+        url = f"{self.URL}/distribution/leap/"
+        log.debug(f"Lookup for openSUSE Leap releases by url {url}")
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = OpenSUSEVersionParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        log.debug(f"openSUSE versions: {parser.versions}")
+        releases={v: 'leap' for v in parser.versions}
+        releases['1.0'] = 'tumbleweed'
+        return releases
+
+    def get_sha256(self, base_url, filename):
+        url = f"{base_url}/{filename}.sha256"
+        r = requests.get(url)
+        for line in r.content.decode().strip().split("\n"):
+            if filename in line:
+                sha256, f = re.split(r"\s+", line)
+                return sha256
+        raise fNameError('SHA-256 checksums not found for file ' + filename +
+                     ' at ' + url)
+
+    def get_latest_leap_image(self, url, arch):
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = OpenSUSEImageParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        r = re.compile(r"Cloud-Build([0-9]+\.[0-9]+)\.qcow2$")
+        for href in parser.urls:
+            res = r.search(href)
+            if res and arch in href:
+                serial=res.group(1)
+                return href.lstrip('./'), serial
+        raise NameError('Image not found on server at ' + url)
+
+    def get_latest_tumbleweed_image(self, url, arch):
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = OpenSUSEImageParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        r = re.compile(r"[0-9]+\.[0-9]+\.[0-9]-Cloud-Snapshot([0-9]+)\.qcow2$")
+        for href in parser.urls:
+            res = r.search(href)
+            if res and arch in href and 'Minimal-VM' in href:
+                serial=res.group(1)
+                return href.lstrip('./'), serial
+        raise NameError('Image not found on server at ' + url)
+
+    def __call__(self, release, arch):
+        if arch == "amd64":
+            arch = "x86_64"
+        if release == '1.0' or release == '1.0.0':
+            base_url = self.URL + f"/tumbleweed/appliances"
+            filename, serial = self.get_latest_tumbleweed_image(base_url, arch)
+        else:
+            base_url = self.URL + f"/distribution/leap/{release}/appliances"
+            filename, serial = self.get_latest_leap_image(base_url, arch)
+        log.debug(f"Found image for release '{release}': {filename} ({serial})")
+        sha256 = self.get_sha256(base_url, filename)
+        url = base_url + '/' + filename
+        return {
+            'url': url,
+            'serial': serial,
+            'checksum': sha256,
+            'hash_function': 'sha256'
+        }
+
 
 HANDLERS = {
         'ubuntu': UbuntuHandler(),
+        'opensuse': OpenSUSEHandler(),
         'rocky': RockyHandler(),
     }
 
