@@ -45,6 +45,8 @@ def list_cloud_images(pool, distro, distroversion, arch):
     SUFFIXRAW = '-cloudimg-'+arch+'.raw'
 
     for name in pool.listVolumes():
+        if not 'cloudimg' in name:
+            continue
         log.debug('Considering image: %s', name)
         if not name.startswith(PREFIX):
             continue
