@@ -80,6 +80,11 @@ class UbuntuVersionParser(HTMLParser):
                 if  key == 'href':
                     res = r.search(val)
                     if res:
+                        ver = res.group(1)
+                        (major, minor) = ver.split('.')[:2]
+                        # Skip because there is no interest in earlier version than 18
+                        if int(major) < 18:
+                            continue
                         self.versions.append(val.rstrip('/'))
 
 class RockyVersionParser(HTMLParser):
@@ -94,6 +99,13 @@ class RockyVersionParser(HTMLParser):
                 if key == 'href':
                     res = r.search(val)
                     if res:
+                        ver = res.group(1)
+                        (major, minor) = ver.split('.')[:2]
+                        # Skip versions before 8.10 and 9.5 because images are removed
+                        if int(major) == 8 and int(minor) < 10:
+                            continue
+                        if int(major) == 9 and int(minor) < 5:
+                            continue
                         self.versions.append(val.rstrip('/'))
 
 class OpenSUSEVersionParser(HTMLParser):
@@ -108,7 +120,18 @@ class OpenSUSEVersionParser(HTMLParser):
                 if key == 'href':
                     res = r.search(val)
                     if res:
-                        self.versions.append(res.group(1))
+                        ver = res.group(1)
+                        (major, minor) = ver.split('.')
+                        # Skip 16.0 because there is no kvm cloud image released yet
+                        if int(major) == 16:
+                            continue
+                        # Skip versions before 15.5 because of low interest
+                        if int(major) == 15 and int(minor) < 5:
+                            continue
+                        # Skip all 42.x because discontinued
+                        if int(major) == 42:
+                            continue
+                        self.versions.append(ver)
 
 class CentOSVersionParser(HTMLParser):
     def __init__(self):
@@ -121,7 +144,11 @@ class CentOSVersionParser(HTMLParser):
                 if key == 'href':
                     res = r.search(val)
                     if res:
-                        self.versions.append(f'{res.group(1)}.stream')
+                        ver = res.group(1)
+                        # Skip everything before 9 version
+                        if int(ver) < 9:
+                            continue
+                        self.versions.append(f'{ver}.stream')
 
 class DistroHandler:
     def get_releases(self) -> dict[str, str]:
