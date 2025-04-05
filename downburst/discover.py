@@ -45,6 +45,18 @@ class OpenSUSEImageParser(HTMLParser):
                     self.urls.append(val)
 
 
+class CentOSImageParser(HTMLParser):
+    def __init__(self):
+        self.urls = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            for key, val in attrs:
+                if  key == 'href' and val.endswith('.qcow2') and 'GenericCloud' in val:
+                    self.urls.append(val)
+
+
 class ReleaseParser(HTMLParser):
     def __init__(self):
         self.dirs = []
@@ -97,6 +109,19 @@ class OpenSUSEVersionParser(HTMLParser):
                     res = r.search(val)
                     if res:
                         self.versions.append(res.group(1))
+
+class CentOSVersionParser(HTMLParser):
+    def __init__(self):
+        self.versions = []
+        HTMLParser.__init__(self)
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            r = re.compile(r'^([0-9]{1,2})-stream/')
+            for key, val in attrs:
+                if key == 'href':
+                    res = r.search(val)
+                    if res:
+                        self.versions.append(f'{res.group(1)}.stream')
 
 class DistroHandler:
     def get_releases(self) -> dict[str, str]:
@@ -205,7 +230,7 @@ class UbuntuHandler(DistroHandler):
         else:
             state = '-' + state
         major, minor = version.split('.')[0:2]
-        if int(major) >= 23 and int(minor) >= 10:
+        if int(major) >= 23 and int(minor) >= 10 or int(major) >= 24:
             return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '.img'
         elif int(major) >= 20:
             return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '-disk-kvm.img'
@@ -248,6 +273,8 @@ class UbuntuHandler(DistroHandler):
         distroversion = distroversion.lower()
         if arch == "x86_64":
             arch = "amd64"
+        if arch == "aarch64":
+            arch = "arm64"
         release = self.get_release(distroversion)
         log.debug(f"Found release: {release}")
         version = self.get_version(distroversion)
@@ -259,6 +286,77 @@ class UbuntuHandler(DistroHandler):
 
         return {'url': url, 'serial': serial, 'checksum': sha256,
                 'hash_function': 'sha256'}
+
+class CentOSHandler(DistroHandler):
+    URL="https://cloud.centos.org"
+
+    def get_releases(self) -> dict[str, str]:
+        url = f"{self.URL}/centos/"
+        log.debug(f"Lookup for CentOS releases by url {url}")
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = CentOSVersionParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        log.debug(f"CentOS versions: {parser.versions}")
+        return {v:None for v in parser.versions}
+
+    def get_sha256(self, base_url, filename):
+        url = base_url + "/CHECKSUM"
+        r = requests.get(url)
+        parser = re.compile(r"SHA256\s+\((.*\.qcow2)\)\s+=\s+([a-f0-9]+)$")
+        for line in r.content.decode().strip().split("\n"):
+            found = parser.search(line)
+            if found:
+                if found.group(1) == filename:
+                    return found.group(2)
+        raise NameError('SHA-256 checksums not found for file ' + filename +
+                        ' at ' + url)
+
+    def get_latest_release_image(self, url):
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = CentOSImageParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        r = re.compile(r"GenericCloud-[0-9]+-([0-9]+\.[0-9]+)\.")
+        for href in sorted(parser.urls, reverse=True):
+            res = r.search(href)
+            if res:
+                serial=res.group(1)
+                return href, serial
+
+        raise NameError('Image not found on server at ' + url)
+
+    def get_release(self, distroversion):
+        try:
+            if "." in distroversion:
+                version = distroversion.split('.', 1)
+                major = version[0]
+                if version[1] == 'stream':
+                    return f'{major}-stream'
+        except KeyError:
+            return distroversion
+
+    def __call__(self, distroversion, arch):
+        if arch == "amd64":
+            arch = "x86_64"
+        if arch == "arm64":
+            arch = "aarch64"
+        release = self.get_release(distroversion)
+        base_url = self.URL + f"/centos/{release}/{arch}/images"
+        filename, serial = self.get_latest_release_image(base_url)
+        log.debug(f"Found image for release '{release}': {filename} ({serial})")
+        sha256 = self.get_sha256(base_url, filename)
+        url = base_url + '/' + filename
+        return {
+            'url': url,
+            'serial': serial.rstrip('.0'),
+            'checksum': sha256,
+            'hash_function': 'sha256'
+        }
+
+
 
 class AlmaHandler(DistroHandler):
     URL="https://repo.almalinux.org"
@@ -304,7 +402,9 @@ class AlmaHandler(DistroHandler):
     def __call__(self, release, arch):
         if arch == "amd64":
             arch = "x86_64"
-        base_url = self.URL + f"/almalinux/{release}/cloud/{arch}/images/"
+        if arch == "arm64":
+            arch = "aarch64"
+        base_url = self.URL + f"/almalinux/{release}/cloud/{arch}/images"
         filename, serial = self.get_latest_release_image(base_url)
         log.debug(f"Found image for release '{release}': {filename} ({serial})")
         sha256 = self.get_sha256(base_url, filename)
@@ -349,7 +449,7 @@ class RockyHandler(DistroHandler):
         parser.feed(r.content.decode())
         parser.close()
         r = re.compile(r"GenericCloud-Base-[0-9]+\.[0-9]+-([0-9]+\.[0-9]+)\.")
-        for href in parser.urls:
+        for href in sorted(parser.urls, reverse=True):
             res = r.search(href)
             if res:
                 serial=res.group(1)
@@ -360,6 +460,8 @@ class RockyHandler(DistroHandler):
     def __call__(self, release, arch):
         if arch == "amd64":
             arch = "x86_64"
+        if arch == "arm64":
+            arch = "aarch64"
         base_url = self.URL + f"/pub/rocky/{release}/images/{arch}"
         filename, serial = self.get_latest_release_image(base_url)
         log.debug(f"Found image for release '{release}': {filename} ({serial})")
@@ -429,8 +531,12 @@ class OpenSUSEHandler(DistroHandler):
     def __call__(self, release, arch):
         if arch == "amd64":
             arch = "x86_64"
+        if arch == "arm64":
+            arch = "aarch64"
         if release == '1.0' or release == '1.0.0':
             base_url = self.URL + f"/tumbleweed/appliances"
+            if arch == "aarch64":
+                base_url = self.URL + f"/ports/{arch}/tumbleweed/appliances"
             filename, serial = self.get_latest_tumbleweed_image(base_url, arch)
         else:
             base_url = self.URL + f"/distribution/leap/{release}/appliances"
@@ -451,6 +557,7 @@ HANDLERS = {
         'opensuse': OpenSUSEHandler(),
         'alma': AlmaHandler(),
         'rocky': RockyHandler(),
+        'centos': CentOSHandler(),
     }
 
 def get(distro, distroversion, arch):
@@ -478,6 +585,21 @@ def get(distro, distroversion, arch):
         return returndict
     else:
         raise NameError('Image %s not found on server at %s' % (imagestring, URL))
+
+def get_distro(args):
+
+    arch = "amd64"
+    if args.arch:
+        arch = args.arch
+
+    if arch == "x86_64":
+        arch = "amd64"
+
+    if arch == "aarch64":
+        arch == "arm64"
+
+    d=get(args.distro, args.distroversion, arch)
+    print(f'{d}')
 
 def add_distro(distro, version, distro_and_versions, codename=None):
     # Create dict entry for Distro, append if exists.
@@ -530,6 +652,32 @@ def make_json(parser):
     Get json formatted distro and version information.
     """
     parser.set_defaults(func=print_json)
+
+def make_lookup(parser):
+    """
+    Lookup which image is available for the os
+    """
+    parser.add_argument(
+        '--distro',
+        metavar='DISTRO',
+        help='Distribution of the image, use "downburst list" to see available',
+        )
+    parser.add_argument(
+        '--distroversion',
+        metavar='DISTROVERSION',
+        help='Distribution version of the image, call "downburst list" to see available',
+        )
+    parser.add_argument(
+        '--arch',
+        metavar='arch',
+        help='Architecture of the vm (amd64/arm64)',
+        )
+
+    parser.set_defaults(
+        func=get_distro,
+        distro=[],
+        distroversion=[],
+        )
 
 def print_json(parser):
     print(json.dumps(get_distro_list()))

@@ -80,6 +80,9 @@ def create(args):
     if arch == "x86_64":
         arch = "amd64"
 
+    if arch == "aarch64":
+        arch == "arm64"
+
     if arch is None:
         arch = "amd64"
 
