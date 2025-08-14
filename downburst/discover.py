@@ -57,6 +57,30 @@ class CentOSImageParser(HTMLParser):
                     self.urls.append(val)
 
 
+class FedoraImageParser(HTMLParser):
+    def __init__(self):
+        self.urls = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            for key, val in attrs:
+                if  key == 'href' and val.endswith('.qcow2') and 'Cloud-Base-Generic' in val:
+                    self.urls.append(val)
+
+
+class FedoraChecksumFileParser(HTMLParser):
+    def __init__(self):
+        self.urls = []
+        HTMLParser.__init__(self)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            for key, val in attrs:
+                if  key == 'href' and val.endswith('-CHECKSUM'):
+                    self.urls.append(val)
+
+
 class ReleaseParser(HTMLParser):
     def __init__(self):
         self.dirs = []
@@ -149,6 +173,23 @@ class CentOSVersionParser(HTMLParser):
                         if int(ver) < 9:
                             continue
                         self.versions.append(f'{ver}.stream')
+
+class FedoraVersionParser(HTMLParser):
+    def __init__(self):
+        self.versions = []
+        HTMLParser.__init__(self)
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            r = re.compile(r'^([0-9]{1,2})/')
+            for key, val in attrs:
+                if key == 'href':
+                    res = r.search(val)
+                    if res:
+                        ver = res.group(1)
+                        # Skip everything before 41 version
+                        if int(ver) < 41:
+                            continue
+                        self.versions.append(f'{ver}')
 
 class DistroHandler:
     def get_releases(self) -> dict[str, str]:
@@ -314,6 +355,74 @@ class UbuntuHandler(DistroHandler):
         return {'url': url, 'serial': serial, 'checksum': sha256,
                 'hash_function': 'sha256'}
 
+
+class FedoraHandler(DistroHandler):
+    URL="https://download.fedoraproject.org"
+
+    def get_releases(self) -> dict[str, str]:
+        url = f"{self.URL}/pub/fedora/linux/releases/"
+        log.debug(f"Lookup for Fedora releases by url {url}")
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = FedoraVersionParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        log.debug(f"Fedora versions: {parser.versions}")
+        return {v:None for v in parser.versions}
+
+    def get_sha256(self, base_url, filename):
+        r = requests.get(base_url)
+        r.raise_for_status()
+        parser = FedoraChecksumFileParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        if len(parser.urls) < 1:
+            raise RuntimeError(f"Unable to find checksum file by {base_url}")
+        log.debug(f"Checksum files found: {parser.urls}")
+        url = f"{base_url}/{parser.urls[0]}"
+        r = requests.get(url)
+        parser = re.compile(r"SHA256\s+\((.*\.qcow2)\)\s+=\s+([a-f0-9]+)$")
+        for line in r.content.decode().strip().split("\n"):
+            found = parser.search(line)
+            if found:
+                if found.group(1) == filename:
+                    return found.group(2)
+        raise NameError('SHA-256 checksums not found for file ' + filename +
+                        ' at ' + url)
+
+    def get_latest_release_image(self, url):
+        r = requests.get(url)
+        r.raise_for_status()
+        parser = FedoraImageParser()
+        parser.feed(r.content.decode())
+        parser.close()
+        r = re.compile(r"Cloud-Base-Generic-[0-9]+-([0-9]+\.[0-9]+)\.")
+        for href in sorted(parser.urls, reverse=True):
+            res = r.search(href)
+            if res:
+                serial=res.group(1)
+                return href, serial
+
+        raise NameError('Image not found on server at ' + url)
+
+    def __call__(self, release, arch):
+        if arch == "amd64":
+            arch = "x86_64"
+        if arch == "arm64":
+            arch = "aarch64"
+        base_url = self.URL + f"/pub/fedora/linux/releases/{release}/Cloud/{arch}/images"
+        filename, serial = self.get_latest_release_image(base_url)
+        log.debug(f"Found image for release '{release}': {filename} ({serial})")
+        sha256 = self.get_sha256(base_url, filename)
+        url = base_url + '/' + filename
+        return {
+            'url': url,
+            'serial': serial.rstrip('.0'),
+            'checksum': sha256,
+            'hash_function': 'sha256'
+        }
+
+
 class CentOSHandler(DistroHandler):
     URL="https://cloud.centos.org"
 
@@ -382,7 +491,6 @@ class CentOSHandler(DistroHandler):
             'checksum': sha256,
             'hash_function': 'sha256'
         }
-
 
 
 class AlmaHandler(DistroHandler):
@@ -583,6 +691,7 @@ HANDLERS = {
         'ubuntu': UbuntuHandler(),
         'opensuse': OpenSUSEHandler(),
         'alma': AlmaHandler(),
+        'fedora': FedoraHandler(),
         'rocky': RockyHandler(),
         'centos': CentOSHandler(),
     }
