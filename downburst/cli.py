@@ -33,7 +33,14 @@ def parse_args():
         metavar='COMMAND',
         help='description',
         )
-    eps = (ep for ep in meta.entry_points() if ep.group == 'downburst.cli')
+    m = meta.entry_points()
+    if type(m) is meta.EntryPoints:
+        # python >=3.12 entry_points() returns metadata.EntryPoints
+        eps = (ep for ep in m if ep.group == 'downburst.cli')
+    else:
+        # python <=3.11 entry_points() returns metadata.SelectableGroups
+
+        eps = (ep for ep in m.get('downburst.cli',[]))
     for ep in eps:
         fn = ep.load()
         p = sub.add_parser(ep.name, help=fn.__doc__)
