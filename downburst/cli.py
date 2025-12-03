@@ -1,7 +1,8 @@
 import argparse
 import logging
-import pkg_resources
 import sys
+
+from importlib import metadata as meta
 
 from . import exc
 
@@ -32,7 +33,8 @@ def parse_args():
         metavar='COMMAND',
         help='description',
         )
-    for ep in pkg_resources.iter_entry_points('downburst.cli'):
+    eps = (ep for ep in meta.entry_points() if ep.group == 'downburst.cli')
+    for ep in eps:
         fn = ep.load()
         p = sub.add_parser(ep.name, help=fn.__doc__)
         # ugly kludge but i really want to have a nice way to access
