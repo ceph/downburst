@@ -118,19 +118,21 @@ class RockyVersionParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
-            r = re.compile(r'^([0-9]+\.[0-9]+)/')
+            r = re.compile(r'^(\.\/)?([0-9]+\.[0-9]+)/')
             for key, val in attrs:
                 if key == 'href':
                     res = r.search(val)
                     if res:
-                        ver = res.group(1)
+                        ver = res.group(2)
                         (major, minor) = ver.split('.')[:2]
                         # Skip versions before 8.10 and 9.5 because images are removed
                         if int(major) == 8 and int(minor) < 10:
                             continue
                         if int(major) == 9 and int(minor) < 5:
                             continue
-                        self.versions.append(val.rstrip('/'))
+                        if int(major) == 10 and int(minor) < 1:
+                            continue
+                        self.versions.append(ver)
 
 class OpenSUSEVersionParser(HTMLParser):
     def __init__(self):
