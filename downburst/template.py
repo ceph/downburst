@@ -184,6 +184,7 @@ def domain(
             etree.SubElement(disk, 'driver', name='qemu', type='raw')
             etree.SubElement(disk, 'source', file=key)
             etree.SubElement(disk, 'target', dev=blockdevice, bus='virtio')
+            etree.SubElement(disk, 'serial').text = ("dwnbrst" + name[:2] + name[-3:] + f"{x:03d}").upper()
     if rbd_disks_key is not None:
         for key in rbd_disks_key:
             x += 1
