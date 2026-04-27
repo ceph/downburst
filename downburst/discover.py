@@ -303,7 +303,7 @@ class UbuntuHandler(DistroHandler):
         if int(major) >= 23 and int(minor) >= 10 or int(major) >= 24:
             return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '.img'
         elif int(major) >= 20:
-            return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '-disk-kvm.img'
+            return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '.img'
         else:
             return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '-disk1.img'
 
