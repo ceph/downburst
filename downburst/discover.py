@@ -148,8 +148,8 @@ class OpenSUSEVersionParser(HTMLParser):
                     if res:
                         ver = res.group(1)
                         (major, minor) = ver.split('.')
-                        # Skip 16.0 because there is no kvm cloud image released yet
-                        if int(major) == 16:
+                        # Skip 16.1 because there is no kvm cloud image released yet
+                        if int(major) == 16 and int(minor) > 0:
                             continue
                         # Skip versions before 15.5 because of low interest
                         if int(major) == 15 and int(minor) < 5:
