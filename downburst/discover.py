@@ -279,7 +279,7 @@ class UbuntuHandler(DistroHandler):
         """
         url = f"{self.URL}/releases/"
         log.debug(f"Lookup for Ubuntu release by: {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = UbuntuVersionParser()
         parser.feed(r.content.decode())
@@ -364,7 +364,7 @@ class FedoraHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/pub/fedora/linux/releases/"
         log.debug(f"Lookup for Fedora releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = FedoraVersionParser()
         parser.feed(r.content.decode())
@@ -431,7 +431,7 @@ class CentOSHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/centos/"
         log.debug(f"Lookup for CentOS releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = CentOSVersionParser()
         parser.feed(r.content.decode())
@@ -501,7 +501,7 @@ class AlmaHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/almalinux/"
         log.debug(f"Lookup for AlmaLinux releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = RockyVersionParser()
         parser.feed(r.content.decode())
@@ -559,7 +559,7 @@ class RockyHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/pub/rocky/"
         log.debug(f"Lookup for Rockfy releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = RockyVersionParser()
         parser.feed(r.content.decode())
@@ -617,7 +617,7 @@ class OpenSUSEHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/distribution/leap/"
         log.debug(f"Lookup for openSUSE Leap releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = OpenSUSEVersionParser()
         parser.feed(r.content.decode())
