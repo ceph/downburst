@@ -748,11 +748,30 @@ def add_distro(distro, version, distro_and_versions, codename=None):
     except KeyError:
         distro_and_versions[distro] = [version]
 
+def lookup_images(distros=[]):
+    log.debug(f"Requested distros {distros}")
+    if len(distros) > 0:
+        distro_and_versions = {}
+    else:
+        distro_and_versions = get_distro_list()
+
+    for distro, handler in HANDLERS.items():
+        if len(distros) > 0 and distro not in distros:
+            continue
+        for version, codename in handler.get_releases().items():
+            add_distro(distro, version, distro_and_versions, codename)
+
+    return distro_and_versions
+
+
 def get_distro_list():
     distro_and_versions = {}
-
     # Non ubuntu distro's
-    log.debug(f"Lookup images at {URL}")
+    if URL:
+        log.debug(f"Lookup images at {URL}")
+    else:
+        log.debug(f"DOWNBURST_DISCOVER_URL is empty")
+        return distro_and_versions
     r = requests.get(URL)
     r.raise_for_status()
 
@@ -772,41 +791,49 @@ def get_distro_list():
                     # Pull Distro and Version values from Filenames
                     version = '-'.join(re.split('[0-9]{8}', entry)[0].strip('-').split('-')[1:])
                     add_distro(distro, str(version), distro_and_versions)
-
-    for distro, handler in HANDLERS.items():
-        for version, codename in handler.get_releases().items():
-            add_distro(distro, version, distro_and_versions, codename)
-
     return distro_and_versions
+
 
 def make(parser):
     """
     Print Available Distributions and Versions.
     """
-    parser.set_defaults(func=print_distros)
+    parser.add_argument(
+        'distros',
+        nargs='*',
+        metavar='DISTROS',
+        help='Lookup only distros from the list',
+        )
+    parser.set_defaults(func=print_distros, distros=[])
 
 def make_json(parser):
     """
     Get json formatted distro and version information.
     """
-    parser.set_defaults(func=print_json)
+    parser.add_argument(
+        'distros',
+        nargs='*',
+        metavar='DISTROS',
+        help='Lookup only distros from the list',
+        )
+    parser.set_defaults(func=print_json, distros=[])
 
 def make_lookup(parser):
     """
     Lookup which image is available for the os
     """
     parser.add_argument(
-        '--distro',
+        '-d', '--distro',
         metavar='DISTRO',
         help='Distribution of the image, use "downburst list" to see available',
         )
     parser.add_argument(
-        '--distroversion',
+        '-D', '--distroversion',
         metavar='DISTROVERSION',
         help='Distribution version of the image, call "downburst list" to see available',
         )
     parser.add_argument(
-        '--arch',
+        '-a', '--arch',
         metavar='arch',
         help='Architecture of the vm (amd64/arm64)',
         )
@@ -818,11 +845,11 @@ def make_lookup(parser):
         )
 
 def print_json(parser):
-    print(json.dumps(get_distro_list()))
+    print(json.dumps(lookup_images(parser.distros)))
     return
 
 def print_distros(parser):
-    distro_and_versions =get_distro_list()
+    distro_and_versions = lookup_images(parser.distros)
     for distro in sorted(distro_and_versions):
         version = distro_and_versions[distro]
         print('{distro}:   \t {version}'. format(distro=distro,version=version))
