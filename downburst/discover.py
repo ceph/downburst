@@ -558,7 +558,7 @@ class RockyHandler(DistroHandler):
 
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/pub/rocky/"
-        log.debug(f"Lookup for Rockfy releases by url {url}")
+        log.debug(f"Lookup for Rocky releases by url {url}")
         r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = RockyVersionParser()
