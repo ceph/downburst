@@ -20,8 +20,8 @@ def test_ubuntu_handler(m_requests_get):
 
 @patch('downburst.discover.UbuntuHandler.get_latest_release_serial')
 def test_get(m_get_latest_release_serial):
-    m_get_latest_release_serial.return_value = ('20230420', 'release')
-    checksum = 'cd824b19795e8a6b9ae993b0b5157de0275e952a7a9e8b9717ca07acec22f51b'
-    res = discover.get('ubuntu', '20.04', 'x86_64')
+    m_get_latest_release_serial.return_value = ('20260321', 'release')
+    checksum = '5c3ddb00f60bc455dac0862fabe9d8bacec46c33ac1751143c5c3683404b110d'
+    res = discover.get('ubuntu', '24.04', 'x86_64')
     assert checksum == res['checksum']
 
