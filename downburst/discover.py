@@ -237,6 +237,9 @@ class UbuntuHandler(DistroHandler):
         '23.10': 'mantic',
         '24.04': 'noble',
         '24.10': 'oracular',
+        '25.04': 'plucky',
+        '25.10': 'questing',
+        '26.04': 'resolute',
     }
 
     RELEASE_TO_VERSION = {v:k for k, v in VERSION_TO_RELEASE.items()}
