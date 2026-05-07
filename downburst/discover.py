@@ -148,8 +148,8 @@ class OpenSUSEVersionParser(HTMLParser):
                     if res:
                         ver = res.group(1)
                         (major, minor) = ver.split('.')
-                        # Skip 16.0 because there is no kvm cloud image released yet
-                        if int(major) == 16:
+                        # Skip 16.1 because there is no kvm cloud image released yet
+                        if int(major) == 16 and int(minor) > 0:
                             continue
                         # Skip versions before 15.5 because of low interest
                         if int(major) == 15 and int(minor) < 5:
@@ -237,6 +237,9 @@ class UbuntuHandler(DistroHandler):
         '23.10': 'mantic',
         '24.04': 'noble',
         '24.10': 'oracular',
+        '25.04': 'plucky',
+        '25.10': 'questing',
+        '26.04': 'resolute',
     }
 
     RELEASE_TO_VERSION = {v:k for k, v in VERSION_TO_RELEASE.items()}
@@ -279,7 +282,7 @@ class UbuntuHandler(DistroHandler):
         """
         url = f"{self.URL}/releases/"
         log.debug(f"Lookup for Ubuntu release by: {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = UbuntuVersionParser()
         parser.feed(r.content.decode())
@@ -303,7 +306,7 @@ class UbuntuHandler(DistroHandler):
         if int(major) >= 23 and int(minor) >= 10 or int(major) >= 24:
             return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '.img'
         elif int(major) >= 20:
-            return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '-disk-kvm.img'
+            return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '.img'
         else:
             return 'ubuntu-' + major + '.' + minor + state + '-server-cloudimg-'+ arch + '-disk1.img'
 
@@ -364,7 +367,7 @@ class FedoraHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/pub/fedora/linux/releases/"
         log.debug(f"Lookup for Fedora releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = FedoraVersionParser()
         parser.feed(r.content.decode())
@@ -431,7 +434,7 @@ class CentOSHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/centos/"
         log.debug(f"Lookup for CentOS releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = CentOSVersionParser()
         parser.feed(r.content.decode())
@@ -501,7 +504,7 @@ class AlmaHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/almalinux/"
         log.debug(f"Lookup for AlmaLinux releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = RockyVersionParser()
         parser.feed(r.content.decode())
@@ -558,8 +561,8 @@ class RockyHandler(DistroHandler):
 
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/pub/rocky/"
-        log.debug(f"Lookup for Rockfy releases by url {url}")
-        r = requests.get(url)
+        log.debug(f"Lookup for Rocky releases by url {url}")
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = RockyVersionParser()
         parser.feed(r.content.decode())
@@ -617,7 +620,7 @@ class OpenSUSEHandler(DistroHandler):
     def get_releases(self) -> dict[str, str]:
         url = f"{self.URL}/distribution/leap/"
         log.debug(f"Lookup for openSUSE Leap releases by url {url}")
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
         r.raise_for_status()
         parser = OpenSUSEVersionParser()
         parser.feed(r.content.decode())
@@ -748,11 +751,30 @@ def add_distro(distro, version, distro_and_versions, codename=None):
     except KeyError:
         distro_and_versions[distro] = [version]
 
+def lookup_images(distros=[]):
+    log.debug(f"Requested distros {distros}")
+    if len(distros) > 0:
+        distro_and_versions = {}
+    else:
+        distro_and_versions = get_distro_list()
+
+    for distro, handler in HANDLERS.items():
+        if len(distros) > 0 and distro not in distros:
+            continue
+        for version, codename in handler.get_releases().items():
+            add_distro(distro, version, distro_and_versions, codename)
+
+    return distro_and_versions
+
+
 def get_distro_list():
     distro_and_versions = {}
-
     # Non ubuntu distro's
-    log.debug(f"Lookup images at {URL}")
+    if URL:
+        log.debug(f"Lookup images at {URL}")
+    else:
+        log.debug(f"DOWNBURST_DISCOVER_URL is empty")
+        return distro_and_versions
     r = requests.get(URL)
     r.raise_for_status()
 
@@ -772,41 +794,49 @@ def get_distro_list():
                     # Pull Distro and Version values from Filenames
                     version = '-'.join(re.split('[0-9]{8}', entry)[0].strip('-').split('-')[1:])
                     add_distro(distro, str(version), distro_and_versions)
-
-    for distro, handler in HANDLERS.items():
-        for version, codename in handler.get_releases().items():
-            add_distro(distro, version, distro_and_versions, codename)
-
     return distro_and_versions
+
 
 def make(parser):
     """
     Print Available Distributions and Versions.
     """
-    parser.set_defaults(func=print_distros)
+    parser.add_argument(
+        'distros',
+        nargs='*',
+        metavar='DISTROS',
+        help='Lookup only distros from the list',
+        )
+    parser.set_defaults(func=print_distros, distros=[])
 
 def make_json(parser):
     """
     Get json formatted distro and version information.
     """
-    parser.set_defaults(func=print_json)
+    parser.add_argument(
+        'distros',
+        nargs='*',
+        metavar='DISTROS',
+        help='Lookup only distros from the list',
+        )
+    parser.set_defaults(func=print_json, distros=[])
 
 def make_lookup(parser):
     """
     Lookup which image is available for the os
     """
     parser.add_argument(
-        '--distro',
+        '-d', '--distro',
         metavar='DISTRO',
         help='Distribution of the image, use "downburst list" to see available',
         )
     parser.add_argument(
-        '--distroversion',
+        '-D', '--distroversion',
         metavar='DISTROVERSION',
         help='Distribution version of the image, call "downburst list" to see available',
         )
     parser.add_argument(
-        '--arch',
+        '-a', '--arch',
         metavar='arch',
         help='Architecture of the vm (amd64/arm64)',
         )
@@ -818,11 +848,11 @@ def make_lookup(parser):
         )
 
 def print_json(parser):
-    print(json.dumps(get_distro_list()))
+    print(json.dumps(lookup_images(parser.distros)))
     return
 
 def print_distros(parser):
-    distro_and_versions =get_distro_list()
+    distro_and_versions = lookup_images(parser.distros)
     for distro in sorted(distro_and_versions):
         version = distro_and_versions[distro]
         print('{distro}:   \t {version}'. format(distro=distro,version=version))
