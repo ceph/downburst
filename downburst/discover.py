@@ -422,7 +422,7 @@ class FedoraHandler(DistroHandler):
         url = base_url + '/' + filename
         return {
             'url': url,
-            'serial': serial.rstrip('.0'),
+            'serial': serial.removesuffix('.0'),
             'checksum': sha256,
             'hash_function': 'sha256'
         }
@@ -492,7 +492,7 @@ class CentOSHandler(DistroHandler):
         url = base_url + '/' + filename
         return {
             'url': url,
-            'serial': serial.rstrip('.0'),
+            'serial': serial.removesuffix('.0'),
             'checksum': sha256,
             'hash_function': 'sha256'
         }
@@ -551,7 +551,7 @@ class AlmaHandler(DistroHandler):
         url = base_url + '/' + filename
         return {
             'url': url,
-            'serial': serial.rstrip('.0'),
+            'serial': serial.removesuffix('.0'),
             'checksum': sha256,
             'hash_function': 'sha256'
         }
@@ -609,7 +609,7 @@ class RockyHandler(DistroHandler):
         url = base_url + '/' + filename
         return {
             'url': url,
-            'serial': serial.rstrip('.0'),
+            'serial': serial.removesuffix('.0'),
             'checksum': sha256,
             'hash_function': 'sha256'
         }
