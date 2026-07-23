@@ -422,7 +422,7 @@ class FedoraHandler(DistroHandler):
         url = base_url + '/' + filename
         return {
             'url': url,
-            'serial': serial.rstrip('.0'),
+            'serial': serial.removesuffix('.0'),
             'checksum': sha256,
             'hash_function': 'sha256'
         }
@@ -492,7 +492,7 @@ class CentOSHandler(DistroHandler):
         url = base_url + '/' + filename
         return {
             'url': url,
-            'serial': serial.rstrip('.0'),
+            'serial': serial.removesuffix('.0'),
             'checksum': sha256,
             'hash_function': 'sha256'
         }
@@ -544,14 +544,18 @@ class AlmaHandler(DistroHandler):
             arch = "x86_64"
         if arch == "arm64":
             arch = "aarch64"
-        base_url = self.URL + f"/almalinux/{release}/cloud/{arch}/images"
+        (major, minor) = (int(i) for i in release.split('.'))
+        if (major == 10 and minor < 2) or (major == 9 and minor < 8) or (major == 8 and minor < 10):
+            base_url = f"https://vault.almalinux.org/{release}/cloud/{arch}/images"
+        else:
+            base_url = self.URL + f"/almalinux/{release}/cloud/{arch}/images"
         filename, serial = self.get_latest_release_image(base_url)
         log.debug(f"Found image for release '{release}': {filename} ({serial})")
         sha256 = self.get_sha256(base_url, filename)
         url = base_url + '/' + filename
         return {
             'url': url,
-            'serial': serial.rstrip('.0'),
+            'serial': serial.removesuffix('.0'),
             'checksum': sha256,
             'hash_function': 'sha256'
         }
@@ -602,14 +606,18 @@ class RockyHandler(DistroHandler):
             arch = "x86_64"
         if arch == "arm64":
             arch = "aarch64"
-        base_url = self.URL + f"/pub/rocky/{release}/images/{arch}"
+        (major, minor) = (int(i) for i in release.split('.'))
+        if (major == 10 and minor < 2) or (major == 9 and minor < 8) or (major == 8 and minor < 10):
+            base_url = self.URL + f"/vault/rocky/{release}/images/{arch}"
+        else:
+            base_url = self.URL + f"/pub/rocky/{release}/images/{arch}"
         filename, serial = self.get_latest_release_image(base_url)
         log.debug(f"Found image for release '{release}': {filename} ({serial})")
         sha256 = self.get_sha256(base_url, filename)
         url = base_url + '/' + filename
         return {
             'url': url,
-            'serial': serial.rstrip('.0'),
+            'serial': serial.removesuffix('.0'),
             'checksum': sha256,
             'hash_function': 'sha256'
         }
